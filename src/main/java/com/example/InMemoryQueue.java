@@ -25,18 +25,18 @@ public class InMemoryQueue {
         this.timerTask = new TimerTask() {
             @Override
             public void run() {
-                ConcurrentLinkedQueue<Message> myQueue = getQueue();
+                ConcurrentLinkedQueue<Message> queue = getQueue();
 
                 /** Find the invisible messages in the queue.
                  *  if the message's invisible timeout,
                  *  make the message visible again by setting the visibleDate to null */
-                Iterator<Message> iterator = myQueue.iterator();
+                Iterator<Message> iterator = queue.iterator();
                 while (iterator.hasNext()) {
-                    Message myMessage = iterator.next();
-                    Date visibleDate = myMessage.getVisibleDate();
+                    Message messageFromQueue = iterator.next();
+                    Date visibleDate = messageFromQueue.getVisibleDate();
                     if (visibleDate != null) {
                         if (visibleDate.before(new Date())) {
-                            myMessage.setVisibleDate(null);
+                            messageFromQueue.setVisibleDate(null);
                         }
                     }
                 }
@@ -48,66 +48,66 @@ public class InMemoryQueue {
         return this.queue;
     }
 
-    public int getQueueSize() {
-        ConcurrentLinkedQueue<Message> myQueue = getQueue();
-        return myQueue.size();
+    public int size() {
+        ConcurrentLinkedQueue<Message> queue = getQueue();
+        return queue.size();
     }
 
     /** Push the message in queue */
     public synchronized void push(Message message) {
-        ConcurrentLinkedQueue<Message> myQueue = getQueue();
+        ConcurrentLinkedQueue<Message> queue = getQueue();
 
         /** If the queue is Empty, start the 1 second timer.
          *  The timer's aim is to scan the queue,
          *  then make the messages which are not be deleted during the visibleTimeout visibility again */
-        if (myQueue.isEmpty()) {
-            Timer myTimer = getTimer();
-            TimerTask myTimerTask = getTimerTask();
-            myTimer.schedule(myTimerTask, 0, 1000);
+        if (queue.isEmpty()) {
+            Timer timer = getTimer();
+            TimerTask timerTask = getTimerTask();
+            timer.schedule(timerTask, 0, 1000);
         }
 
-        myQueue.offer(message);
+        queue.offer(message);
     }
 
     /** Get First Message from queue */
     public synchronized Message pull() {
-        ConcurrentLinkedQueue<Message> myQueue = getQueue();
+        ConcurrentLinkedQueue<Message> queue = getQueue();
 
         /** Find the first visible message from queue */
-        Message myMessage = null;
-        Iterator<Message> iterator = myQueue.iterator();
+        Message messageFromQueue = null;
+        Iterator<Message> iterator = queue.iterator();
         while (iterator.hasNext()) {
-            myMessage = iterator.next();
-            if (myMessage.getVisibleDate() == null) {
+            messageFromQueue = iterator.next();
+            if (messageFromQueue.getVisibleDate() == null) {
                 break;
             }
         }
 
         /** If the queue is empty, or if there is no visible message, return null */
-        if (myMessage == null || myMessage.getVisibleDate() != null) {
+        if (messageFromQueue == null || messageFromQueue.getVisibleDate() != null) {
             return null;
         }
 
         /** Make the message invisible by setting the visible date of the message */
-        Date date = QueueVisibilityTimeout.createVisibleDate(myMessage.getVisibleTimeout());
-        myMessage.setVisibleDate(date);
-        return myMessage;
+        Date date = QueueVisibilityTimeout.createVisibleDate(messageFromQueue.getVisibleTimeout());
+        messageFromQueue.setVisibleDate(date);
+        return messageFromQueue;
     }
 
     /** If message with the specified messageId is in the queue and invisible,
      *  delete the message, return true. Otherwise, return false */
     public synchronized boolean delete(String messageId) {
         boolean result = false;
-        ConcurrentLinkedQueue<Message> myQueue = getQueue();
+        ConcurrentLinkedQueue<Message> queue = getQueue();
 
         /** Find the invisible message which has the specified messageId from queue */
-        Message myMessage = null;
-        Iterator<Message> iterator = myQueue.iterator();
+        Message messageFromQueue = null;
+        Iterator<Message> iterator = queue.iterator();
         while (iterator.hasNext()) {
-            myMessage = iterator.next();
-            if (myMessage.getVisibleDate() != null) {
-                if (myMessage.getMessageId().equals(messageId)) {
-                    myQueue.remove(myMessage);
+            messageFromQueue = iterator.next();
+            if (messageFromQueue.getVisibleDate() != null) {
+                if (messageFromQueue.getMessageId().equals(messageId)) {
+                    queue.remove(messageFromQueue);
                     result = true;
                     break;
                 }
@@ -115,9 +115,9 @@ public class InMemoryQueue {
         }
 
         /** If the queue is empty, stop the timer */
-        if (myQueue.isEmpty()) {
-            Timer myTimer = getTimer();
-            myTimer.cancel();
+        if (queue.isEmpty()) {
+            Timer timer = getTimer();
+            timer.cancel();
         }
 
         return result;

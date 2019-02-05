@@ -40,7 +40,7 @@ public class InMemoryQueueServiceTest {
         Assert.assertTrue(result);
         InMemoryQueue inMemoryQueue = memoryQueueService.getQueueByName("MyQueue1");
         Assert.assertNotNull(inMemoryQueue);
-        Assert.assertEquals(3, inMemoryQueue.getQueueSize());
+        Assert.assertEquals(3, inMemoryQueue.size());
     }
 
     @Test
@@ -57,12 +57,14 @@ public class InMemoryQueueServiceTest {
         InMemoryQueue inMemoryQueue1 = memoryQueueService.getQueueByName("MyQueue1");
         InMemoryQueue inMemoryQueue2 = memoryQueueService.getQueueByName("MyQueue2");
         InMemoryQueue inMemoryQueue3 = memoryQueueService.getQueueByName("MyQueue3");
+        
         Assert.assertNotNull(inMemoryQueue1);
         Assert.assertNotNull(inMemoryQueue2);
         Assert.assertNotNull(inMemoryQueue3);
-        Assert.assertEquals(3, inMemoryQueue1.getQueueSize());
-        Assert.assertEquals(3, inMemoryQueue2.getQueueSize());
-        Assert.assertEquals(3, inMemoryQueue3.getQueueSize());
+        
+        Assert.assertEquals(3, inMemoryQueue1.size());
+        Assert.assertEquals(3, inMemoryQueue2.size());
+        Assert.assertEquals(3, inMemoryQueue3.size());
     }
 
     @Test
@@ -91,14 +93,14 @@ public class InMemoryQueueServiceTest {
     public void testPullWhenQueueIsNotEmpty() {
         boolean result = memoryQueueService.push("https://sqs.us-east-2.amazonaws.com/123456789012/MyQueue1", 2, "hello", "world", "java");
         Assert.assertTrue(result);
-        Message myMessage1 = memoryQueueService.pull("https://sqs.us-east-2.amazonaws.com/123456789012/MyQueue1");
-        Assert.assertEquals("hello", myMessage1.getData());
-        Message myMessage2 = memoryQueueService.pull("https://sqs.us-east-2.amazonaws.com/123456789012/MyQueue1");
-        Assert.assertEquals("world", myMessage2.getData());
-        Message myMessage3 = memoryQueueService.pull("https://sqs.us-east-2.amazonaws.com/123456789012/MyQueue1");
-        Assert.assertEquals("java", myMessage3.getData());
-        Message myMessage4 = memoryQueueService.pull("https://sqs.us-east-2.amazonaws.com/123456789012/MyQueue1");
-        Assert.assertNull(myMessage4);
+        Message message1FromQueue = memoryQueueService.pull("https://sqs.us-east-2.amazonaws.com/123456789012/MyQueue1");
+        Assert.assertEquals("hello", message1FromQueue.getData());
+        Message message2FromQueue = memoryQueueService.pull("https://sqs.us-east-2.amazonaws.com/123456789012/MyQueue1");
+        Assert.assertEquals("world", message2FromQueue.getData());
+        Message message3FromQueue = memoryQueueService.pull("https://sqs.us-east-2.amazonaws.com/123456789012/MyQueue1");
+        Assert.assertEquals("java", message3FromQueue.getData());
+        Message message4FromQueue = memoryQueueService.pull("https://sqs.us-east-2.amazonaws.com/123456789012/MyQueue1");
+        Assert.assertNull(message4FromQueue);
     }
 
     @Test
@@ -135,24 +137,27 @@ public class InMemoryQueueServiceTest {
         boolean result = memoryQueueService.push("https://sqs.us-east-2.amazonaws.com/123456789012/MyQueue1", 2, "hello", "world", "java");
         Assert.assertTrue(result);
 
-        Message myMessage1 = memoryQueueService.pull("https://sqs.us-east-2.amazonaws.com/123456789012/MyQueue1");
-        Assert.assertEquals("hello", myMessage1.getData());
+        Message message1FromQueue = memoryQueueService.pull("https://sqs.us-east-2.amazonaws.com/123456789012/MyQueue1");
+        Assert.assertEquals("hello", message1FromQueue.getData());
 
-        Assert.assertTrue(memoryQueueService.delete("https://sqs.us-east-2.amazonaws.com/123456789012/MyQueue1", myMessage1.getMessageId()));
+        Assert.assertTrue(memoryQueueService.delete("https://sqs.us-east-2.amazonaws.com/123456789012/MyQueue1", message1FromQueue.getMessageId()));
 
-        Message myMessage2 = memoryQueueService.pull("https://sqs.us-east-2.amazonaws.com/123456789012/MyQueue1");
-        Assert.assertEquals("world", myMessage2.getData());
-        Message myMessage3 = memoryQueueService.pull("https://sqs.us-east-2.amazonaws.com/123456789012/MyQueue1");
-        Assert.assertEquals("java", myMessage3.getData());
+        Message message2FromQueue = memoryQueueService.pull("https://sqs.us-east-2.amazonaws.com/123456789012/MyQueue1");
+        Assert.assertEquals("world", message2FromQueue.getData());
 
-        Assert.assertTrue(memoryQueueService.delete("https://sqs.us-east-2.amazonaws.com/123456789012/MyQueue1", myMessage3.getMessageId()));
+        Message message3FromQueue = memoryQueueService.pull("https://sqs.us-east-2.amazonaws.com/123456789012/MyQueue1");
+        Assert.assertEquals("java", message3FromQueue.getData());
+
+        Assert.assertTrue(memoryQueueService.delete("https://sqs.us-east-2.amazonaws.com/123456789012/MyQueue1", message3FromQueue.getMessageId()));
 
         try {
             Thread.sleep(3000);
-            Assert.assertFalse(memoryQueueService.delete("https://sqs.us-east-2.amazonaws.com/123456789012/MyQueue1", myMessage2.getMessageId()));
-            Assert.assertEquals(1, memoryQueueService.getQueueByName("MyQueue1").getQueueSize());
-            Message myMessage4 = memoryQueueService.pull("https://sqs.us-east-2.amazonaws.com/123456789012/MyQueue1");
-            Assert.assertEquals(myMessage2, myMessage4);
+            Assert.assertFalse(memoryQueueService.delete("https://sqs.us-east-2.amazonaws.com/123456789012/MyQueue1", message2FromQueue.getMessageId()));
+
+            Assert.assertEquals(1, memoryQueueService.getQueueByName("MyQueue1").size());
+
+            Message message4FromQueue = memoryQueueService.pull("https://sqs.us-east-2.amazonaws.com/123456789012/MyQueue1");
+            Assert.assertEquals(message2FromQueue, message4FromQueue);
         } catch (InterruptedException e) {
             System.out.println(e.getMessage());
         }

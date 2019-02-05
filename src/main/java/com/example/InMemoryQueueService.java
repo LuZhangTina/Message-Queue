@@ -18,21 +18,21 @@ public class InMemoryQueueService implements QueueService {
     }
 
     public synchronized InMemoryQueue getQueueByName(String queueName) {
-        Map<String, InMemoryQueue> myQueues = getQueues();
-        if (myQueues.containsKey(queueName)) {
-            return myQueues.get(queueName);
+        Map<String, InMemoryQueue> queues = getQueues();
+        if (queues.containsKey(queueName)) {
+            return queues.get(queueName);
         } else {
             return null;
         }
     }
 
     public synchronized InMemoryQueue createQueueByName(String queueName) {
-        Map<String, InMemoryQueue> myQueues = getQueues();
-        if (myQueues.containsKey(queueName)) {
-            return myQueues.get(queueName);
+        Map<String, InMemoryQueue> queues = getQueues();
+        if (queues.containsKey(queueName)) {
+            return queues.get(queueName);
         } else {
             InMemoryQueue queue = new InMemoryQueue();
-            myQueues.put(queueName, queue);
+            queues.put(queueName, queue);
             return queue;
         }
     }
@@ -61,14 +61,14 @@ public class InMemoryQueueService implements QueueService {
 
         /** Find the queue named as queueName.
          *  If there is no specified queue, create a new queue with the queueName */
-        InMemoryQueue myQueue = getQueueByName(queueName);
-        if (myQueue == null) {
-            myQueue = createQueueByName(queueName);
+        InMemoryQueue queue = getQueueByName(queueName);
+        if (queue == null) {
+            queue = createQueueByName(queueName);
         }
 
         int msgVisibleTimeout;
         if (visibilityTimeout == null) {
-            /** If the parameter of delay is null, use the default timeout which is 30 seconds */
+            /** If the parameter of visibleTimeout is null, use the default timeout which is 30 seconds */
             msgVisibleTimeout = QueueVisibilityTimeout.getDefaultVisibilityTimeout();
         } else {
             /** If the visibility timeout if out of the valid range, push fails */
@@ -78,7 +78,7 @@ public class InMemoryQueueService implements QueueService {
             }
         }
 
-        /** If there is nothing to be push, push success */
+        /** If there is nothing to be pushed, push success */
         if (messages == null || messages.length == 0) {
             return true;
         }
@@ -86,7 +86,7 @@ public class InMemoryQueueService implements QueueService {
         /**  add messages one by one in the end of the queue */
         for (String data : messages) {
             Message messageNode = new Message(data, msgVisibleTimeout);
-            myQueue.push(messageNode);
+            queue.push(messageNode);
         }
 
         return true;
@@ -103,12 +103,12 @@ public class InMemoryQueueService implements QueueService {
 
         /** Find the queue named as queueName.
          *  If there is no specified queue, pull fails, return null */
-        InMemoryQueue myQueue = getQueueByName(queueName);
-        if (myQueue == null) {
+        InMemoryQueue queue = getQueueByName(queueName);
+        if (queue == null) {
             return null;
         }
 
-        return myQueue.pull();
+        return queue.pull();
     }
 
     @Override
@@ -122,8 +122,8 @@ public class InMemoryQueueService implements QueueService {
 
         /** Find the queue named as queueName.
          *  If there is no specified queue, delete fails, return false */
-        InMemoryQueue myQueue = getQueueByName(queueName);
-        if (myQueue == null) {
+        InMemoryQueue queue = getQueueByName(queueName);
+        if (queue == null) {
             return false;
         }
 
@@ -132,6 +132,6 @@ public class InMemoryQueueService implements QueueService {
             return false;
         }
 
-        return myQueue.delete(messageId);
+        return queue.delete(messageId);
     }
 }

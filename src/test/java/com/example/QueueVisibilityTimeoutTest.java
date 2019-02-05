@@ -26,7 +26,6 @@ public class QueueVisibilityTimeoutTest {
 
     @Test
     public void testCreateVisibleDate() {
-        int visibleTimeout = 30;
         Date date = QueueVisibilityTimeout.createVisibleDate(30);
         Assert.assertNotNull(date);
     }
