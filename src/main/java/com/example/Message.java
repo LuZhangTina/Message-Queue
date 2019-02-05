@@ -55,9 +55,9 @@ public class Message {
     public String toString() {
         String str = "MessageId: " + getMessageId();
         str = str + System.lineSeparator();
-        str = str + " Message visibility time: " + getVisibleTimeout();
+        str = str + "Message visibility time: " + getVisibleTimeout();
         str = str + System.lineSeparator();
-        str = str + " Message content: " + getData();
+        str = str + "Message content: " + getData();
         str = str + System.lineSeparator();
 
         if (getVisibleDate() != null) {

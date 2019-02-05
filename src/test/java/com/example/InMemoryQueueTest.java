@@ -111,4 +111,87 @@ public class InMemoryQueueTest {
         Assert.assertFalse(myQueue.delete(messageId2));
         Assert.assertEquals(0, myQueue.getQueueSize());
     }
+
+    @Test
+    public void testMessagePulledButNotDeleted() {
+        InMemoryQueue myQueue = new InMemoryQueue();
+        Message message1 = new Message("hello", 2);
+        myQueue.push(message1);
+        Assert.assertNull(message1.getVisibleDate());
+
+        /** Pull the message */
+        Message myMessage = myQueue.pull();
+        Assert.assertNotNull(myMessage.getVisibleDate());
+        try {
+            /** Wait for 1 second, the pulled out message is invisible */
+            Thread.sleep(1000);
+            Assert.assertNotNull(myMessage.getVisibleDate());
+
+            /** Pull one more message, there is no new message can be pulled */
+            Message message2 = myQueue.pull();
+            Assert.assertNull(message2);
+        } catch (InterruptedException e) {
+            System.out.println(e.getMessage());
+        }
+
+        try {
+            /** Wait for 2 second, the pulled out message is visible again */
+            Thread.sleep(2000);
+            Assert.assertNull(myMessage.getVisibleDate());
+
+            /** Pull a new message, the new message is the message just pulled out */
+            Assert.assertEquals(myMessage, myQueue.pull());
+        } catch (InterruptedException e) {
+            System.out.println(e.getMessage());
+        }
+    }
+
+    @Test
+    public void testMessagePulledAndDeleted() {
+        InMemoryQueue myQueue = new InMemoryQueue();
+        Message message1 = new Message("hello", 2);
+        myQueue.push(message1);
+
+        Message message2 = new Message("world", 3);
+        myQueue.push(message2);
+
+        Message message3 = new Message("java", 3);
+        myQueue.push(message3);
+
+        /** Messages are visible in queue */
+        Assert.assertNull(message1.getVisibleDate());
+        Assert.assertNull(message2.getVisibleDate());
+        Assert.assertNull(message3.getVisibleDate());
+        Assert.assertEquals(3, myQueue.getQueueSize());
+
+        /** Pull Three messages */
+        Message myMessage1 = myQueue.pull();
+        Assert.assertNotNull(myMessage1.getVisibleDate());
+        Message myMessage2 = myQueue.pull();
+        Assert.assertNotNull(myMessage2.getVisibleDate());
+        Message myMessage3 = myQueue.pull();
+        Assert.assertNotNull(myMessage3.getVisibleDate());
+        try {
+            /** Wait for 1 second, delete the second message which was pulled out */
+            Thread.sleep(1000);
+            Assert.assertTrue(myQueue.delete(myMessage2.getMessageId()));
+        } catch (InterruptedException e) {
+            System.out.println(e.getMessage());
+        }
+
+        try {
+            /** Wait for 3 second, pull two messages again */
+            Thread.sleep(3000);
+            Message myMessage4 = myQueue.pull();
+            Message myMessage5 = myQueue.pull();
+            Assert.assertEquals(myMessage1, myMessage4);
+            Assert.assertEquals(myMessage3, myMessage5);
+            Assert.assertEquals(2, myQueue.getQueueSize());
+            myQueue.delete(myMessage4.getMessageId());
+            myQueue.delete(myMessage5.getMessageId());
+            Assert.assertEquals(0, myQueue.getQueueSize());
+        } catch (InterruptedException e) {
+            System.out.println(e.getMessage());
+        }
+    }
 }
