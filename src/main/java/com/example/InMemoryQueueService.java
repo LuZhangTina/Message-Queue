@@ -113,6 +113,25 @@ public class InMemoryQueueService implements QueueService {
 
     @Override
     public boolean delete(String queueUrl, String messageId) {
-        return true;
+        /** Get queue name from URL.
+         *  If there is no valid queueName, delete fails, return false */
+        String queueName = getQueueNameByUrl(queueUrl);
+        if (queueName == null) {
+            return false;
+        }
+
+        /** Find the queue named as queueName.
+         *  If there is no specified queue, delete fails, return false */
+        InMemoryQueue myQueue = getQueueByName(queueName);
+        if (myQueue == null) {
+            return false;
+        }
+
+        /** Input messageId is illegal, return false */
+        if (messageId == null || messageId.length() == 0) {
+            return false;
+        }
+
+        return myQueue.delete(messageId);
     }
 }

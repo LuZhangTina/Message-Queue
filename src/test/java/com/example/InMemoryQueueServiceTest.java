@@ -100,4 +100,61 @@ public class InMemoryQueueServiceTest {
         Message myMessage4 = memoryQueueService.pull("https://sqs.us-east-2.amazonaws.com/123456789012/MyQueue1");
         Assert.assertNull(myMessage4);
     }
+
+    @Test
+    public void testDeleteWhenUrlIsNull() {
+        Assert.assertFalse(memoryQueueService.delete(null, "123"));
+    }
+
+    @Test
+    public void testDeleteWhenUrlIsNotIllegal() {
+        Assert.assertFalse(memoryQueueService.delete("queueUrlIsIllegal", "123"));
+    }
+
+    @Test
+    public void testDeleteWhenQueueIsNotExist() {
+        Assert.assertFalse(memoryQueueService.delete("https://sqs.us-east-2.amazonaws.com/123456789012/MyQueue1", "123"));
+    }
+
+    @Test
+    public void testDeleteWhenMessageIdIsNull() {
+        boolean result = memoryQueueService.push("https://sqs.us-east-2.amazonaws.com/123456789012/MyQueue1", 2, "hello", "world", "java");
+        Assert.assertTrue(result);
+        Assert.assertFalse(memoryQueueService.delete("https://sqs.us-east-2.amazonaws.com/123456789012/MyQueue1", null));
+    }
+
+    @Test
+    public void testDeleteWhenMessageIdIsNotExist() {
+        boolean result = memoryQueueService.push("https://sqs.us-east-2.amazonaws.com/123456789012/MyQueue1", 2, "hello", "world", "java");
+        Assert.assertTrue(result);
+        Assert.assertFalse(memoryQueueService.delete("https://sqs.us-east-2.amazonaws.com/123456789012/MyQueue1", "123"));
+    }
+
+    @Test
+    public void testDeleteMessageInVisibleTimeout() {
+        boolean result = memoryQueueService.push("https://sqs.us-east-2.amazonaws.com/123456789012/MyQueue1", 2, "hello", "world", "java");
+        Assert.assertTrue(result);
+
+        Message myMessage1 = memoryQueueService.pull("https://sqs.us-east-2.amazonaws.com/123456789012/MyQueue1");
+        Assert.assertEquals("hello", myMessage1.getData());
+
+        Assert.assertTrue(memoryQueueService.delete("https://sqs.us-east-2.amazonaws.com/123456789012/MyQueue1", myMessage1.getMessageId()));
+
+        Message myMessage2 = memoryQueueService.pull("https://sqs.us-east-2.amazonaws.com/123456789012/MyQueue1");
+        Assert.assertEquals("world", myMessage2.getData());
+        Message myMessage3 = memoryQueueService.pull("https://sqs.us-east-2.amazonaws.com/123456789012/MyQueue1");
+        Assert.assertEquals("java", myMessage3.getData());
+
+        Assert.assertTrue(memoryQueueService.delete("https://sqs.us-east-2.amazonaws.com/123456789012/MyQueue1", myMessage3.getMessageId()));
+
+        try {
+            Thread.sleep(3000);
+            Assert.assertFalse(memoryQueueService.delete("https://sqs.us-east-2.amazonaws.com/123456789012/MyQueue1", myMessage2.getMessageId()));
+            Assert.assertEquals(1, memoryQueueService.getQueueByName("MyQueue1").getQueueSize());
+            Message myMessage4 = memoryQueueService.pull("https://sqs.us-east-2.amazonaws.com/123456789012/MyQueue1");
+            Assert.assertEquals(myMessage2, myMessage4);
+        } catch (InterruptedException e) {
+            System.out.println(e.getMessage());
+        }
+    }
 }
