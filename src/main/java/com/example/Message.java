@@ -54,15 +54,15 @@ public class Message {
     @Override
     public String toString() {
         String str = "MessageId: " + getMessageId();
-        str = str + "\r\n";
+        str = str + System.lineSeparator();
         str = str + " Message visibility time: " + getVisibleTimeout();
-        str = str + "\r\n";
+        str = str + System.lineSeparator();
         str = str + " Message content: " + getData();
-        str = str + "\r\n";
+        str = str + System.lineSeparator();
 
         if (getVisibleDate() != null) {
             str = str + getVisibleDate().toString();
-            str = str + "\r\n";
+            str = str + System.lineSeparator();
         }
 
         return str;

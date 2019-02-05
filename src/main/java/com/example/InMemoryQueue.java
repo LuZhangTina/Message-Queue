@@ -53,4 +53,27 @@ public class InMemoryQueue {
         myMessage.setVisibleDate(date);
         return myMessage;
     }
+
+    /** If message with the specified messageId is in the queue and invisible,
+     *  delete the message, return true. Otherwise, return false */
+    public synchronized boolean delete(String messageId) {
+        boolean result = false;
+        ConcurrentLinkedQueue<Message> myQueue = getQueue();
+
+        /** Find the invisible message which has the specified messageId from queue */
+        Message myMessage = null;
+        Iterator<Message> iterator = myQueue.iterator();
+        while (iterator.hasNext()) {
+            myMessage = iterator.next();
+            if (myMessage.getVisibleDate() != null) {
+                if (myMessage.getMessageId().equals(messageId)) {
+                    myQueue.remove(myMessage);
+                    result = true;
+                    break;
+                }
+            }
+        }
+
+        return result;
+    }
 }
