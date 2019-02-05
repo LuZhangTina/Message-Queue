@@ -94,7 +94,21 @@ public class InMemoryQueueService implements QueueService {
 
     @Override
     public Message pull(String queueUrl) {
-        return null;
+        /** Get queue name from URL.
+         *  If there is no valid queueName, pull fails, return null */
+        String queueName = getQueueNameByUrl(queueUrl);
+        if (queueName == null) {
+            return null;
+        }
+
+        /** Find the queue named as queueName.
+         *  If there is no specified queue, pull fails, return null */
+        InMemoryQueue myQueue = getQueueByName(queueName);
+        if (myQueue == null) {
+            return null;
+        }
+
+        return myQueue.pull();
     }
 
     @Override
