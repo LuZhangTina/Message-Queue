@@ -25,21 +25,7 @@ public class InMemoryQueue {
         this.timerTask = new TimerTask() {
             @Override
             public void run() {
-                ConcurrentLinkedQueue<Message> queue = getQueue();
-
-                /** Find the invisible messages in the queue.
-                 *  if the message's invisible timeout,
-                 *  make the message visible again by setting the visibleDate to null */
-                Iterator<Message> iterator = queue.iterator();
-                while (iterator.hasNext()) {
-                    Message messageFromQueue = iterator.next();
-                    Date visibleDate = messageFromQueue.getVisibleDate();
-                    if (visibleDate != null) {
-                        if (visibleDate.before(new Date())) {
-                            messageFromQueue.setVisibleDate(null);
-                        }
-                    }
-                }
+                resetInvisibleMessageWhichIsTimeoutInQueue();
             }
         };
     }
@@ -121,6 +107,24 @@ public class InMemoryQueue {
         }
 
         return result;
+    }
+
+    public void resetInvisibleMessageWhichIsTimeoutInQueue() {
+        ConcurrentLinkedQueue<Message> myQueue = getQueue();
+
+        /** Find the invisible messages in the queue.
+         *  if the message's invisible times out,
+         *  make the message visible again by setting the visibleDate to null */
+        Iterator<Message> iterator = myQueue.iterator();
+        while (iterator.hasNext()) {
+            Message myMessage = iterator.next();
+            Date visibleDate = myMessage.getVisibleDate();
+            if (visibleDate != null) {
+                if (visibleDate.before(new Date())) {
+                    myMessage.setVisibleDate(null);
+                }
+            }
+        }
     }
 
     private Timer getTimer() {

@@ -3,6 +3,7 @@ package com.example;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import java.util.Date;
 
 /**
  * Created by tina on 2019/2/5.
@@ -150,16 +151,19 @@ public class InMemoryQueueServiceTest {
 
         Assert.assertTrue(memoryQueueService.delete("https://sqs.us-east-2.amazonaws.com/123456789012/MyQueue1", message3FromQueue.getMessageId()));
 
-        try {
-            Thread.sleep(3000);
-            Assert.assertFalse(memoryQueueService.delete("https://sqs.us-east-2.amazonaws.com/123456789012/MyQueue1", message2FromQueue.getMessageId()));
+        /** Mock the message invisible time is timeout */
+        message2FromQueue.setVisibleDate(new Date(System.currentTimeMillis() - 1));
 
-            Assert.assertEquals(1, memoryQueueService.getQueueByName("MyQueue1").size());
+        /** Mock timer triggers the run method */
+        InMemoryQueue queue = memoryQueueService.getQueueByName("MyQueue1");
+        queue.resetInvisibleMessageWhichIsTimeoutInQueue();
 
-            Message message4FromQueue = memoryQueueService.pull("https://sqs.us-east-2.amazonaws.com/123456789012/MyQueue1");
-            Assert.assertEquals(message2FromQueue, message4FromQueue);
-        } catch (InterruptedException e) {
-            System.out.println(e.getMessage());
-        }
+        Assert.assertFalse(memoryQueueService.delete("https://sqs.us-east-2.amazonaws.com/123456789012/MyQueue1", message2FromQueue.getMessageId()));
+
+        Assert.assertEquals(1, memoryQueueService.getQueueByName("MyQueue1").size());
+
+        Message message4FromQueue = memoryQueueService.pull("https://sqs.us-east-2.amazonaws.com/123456789012/MyQueue1");
+        Assert.assertEquals(message2FromQueue, message4FromQueue);
+
     }
 }
