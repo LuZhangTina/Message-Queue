@@ -1,6 +1,7 @@
 package com.example;
 
-import java.io.File;
+import java.io.*;
+import java.util.Date;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -46,8 +47,64 @@ public class InFileQueue {
         return lockFilePath;
     }
 
+    public boolean push(Message message) {
+        File lockFile = getLockFile();
+        File messageFile = getMessageFile();
+
+        lockQueue(lockFile);
+        writeMessageIntoMessageFile(messageFile, message);
+        unlockQueue(lockFile);
+
+        return true;
+    }
+
+    private void writeMessageIntoMessageFile(File messageFile, Message message) {
+        try {
+            FileOutputStream fileOutputStream = new FileOutputStream(messageFile, true);
+            OutputStreamWriter outputStreamWriter = new OutputStreamWriter(fileOutputStream, "UTF-8");
+            BufferedWriter bufferedWriter = new BufferedWriter(outputStreamWriter);
+
+            /** Write message into file */
+            bufferedWriter.write(createMessageString(message));
+
+            bufferedWriter.close();
+            outputStreamWriter.close();
+            fileOutputStream.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /** Message string structure is as following:
+     *  "messageId$visibleDate$visibleTimeout$messageContent"
+     *  e.g.
+     *  "123456789012$0$3$hello"
+     *  In this case: messageId = "123456789012"
+     *                visibleDate = always visible
+     *                visibleTimeout = 3
+     *                messageContent = "hello"
+     *
+     *  "123456789012$1549423359452$3$world"
+     *  In this case: messageId = "123456789012"
+     *                visibleDate = the 1549423359452 milliseconds since January 1, 1970, 00:00:00 GMT
+     *                visibleTimeout = 3
+     *                messageContent = "world"
+     */
+    private String createMessageString(Message message) {
+        String msgStr = message.getMessageId();
+        msgStr = msgStr + "$";
+        msgStr = msgStr + 0;
+        msgStr = msgStr + "$";
+        msgStr = msgStr + message.getVisibleTimeout();
+        msgStr = msgStr + "$";
+        msgStr = msgStr + message.getData();
+        msgStr = msgStr + System.lineSeparator();
+
+        return msgStr;
+    }
+
     private void lockQueue(File lockFile) {
-        while(!lockFile.mkdir()) {
+        while(!lockFile.mkdirs()) {
             try {
                 TimeUnit.MILLISECONDS.sleep(50);
             } catch (InterruptedException e) {
