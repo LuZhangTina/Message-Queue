@@ -13,7 +13,7 @@ public class Message {
     /** the message's content */
     private String data;
 
-    private final String messageId;
+    private String messageId;
 
     private Date visibleDate;
 
@@ -43,12 +43,16 @@ public class Message {
         return this.data;
     }
 
+    public Date getVisibleDate() {
+        return this.visibleDate;
+    }
+
     public void setVisibleDate(Date date) {
         this.visibleDate = date;
     }
 
-    public Date getVisibleDate() {
-        return this.visibleDate;
+    public void setMessageId(String messageId) {
+        this.messageId = messageId;
     }
 
     @Override

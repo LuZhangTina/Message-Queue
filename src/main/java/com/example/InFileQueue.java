@@ -33,6 +33,11 @@ public class InFileQueue {
         return new File(messageFilePath);
     }
 
+    public File getBackupMessageFile() {
+        String backupMessageFilePath = getBackupMessageFilePath();
+        return new File(backupMessageFilePath);
+    }
+
     public String getLockFilePath() {
         String queueName = getQueueName();
         String filePath = getFileRootPath();
@@ -47,6 +52,13 @@ public class InFileQueue {
         return lockFilePath;
     }
 
+    public String getBackupMessageFilePath() {
+        String queueName = getQueueName();
+        String filePath = getFileRootPath();
+        String lockFilePath = filePath + queueName + "/backupMessage";
+        return lockFilePath;
+    }
+
     public boolean push(Message message) {
         File lockFile = getLockFile();
         File messageFile = getMessageFile();
@@ -56,6 +68,96 @@ public class InFileQueue {
         unlockQueue(lockFile);
 
         return true;
+    }
+
+    public Message pull() {
+        File lockFile = getLockFile();
+        File messageFile = getMessageFile();
+        File backupMessageFile = getBackupMessageFile();
+
+        lockQueue(lockFile);
+        Message message = getFirstVisibleMessageFromMessageFile(messageFile, backupMessageFile);
+        backupMessageFile.renameTo(messageFile);
+        unlockQueue(lockFile);
+
+        return message;
+    }
+
+    private Message getFirstVisibleMessageFromMessageFile(File messageFile, File backupMessageFile) {
+        Message message = null;
+        try {
+            /** Create a read buffer from message file */
+            FileInputStream fileInputStream = new FileInputStream(messageFile);
+            InputStreamReader inputStreamReader = new InputStreamReader(fileInputStream, "UTF-8");
+            BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
+
+            /** Create a write buffer from backupMessage file */
+            FileOutputStream fileOutputStream = new FileOutputStream(backupMessageFile, true);
+            OutputStreamWriter outputStreamWriter = new OutputStreamWriter(fileOutputStream, "UTF-8");
+            BufferedWriter bufferedWriter = new BufferedWriter(outputStreamWriter);
+
+            String line;
+            String[] messageArray;
+            while ((line = bufferedReader.readLine()) != null) {
+                messageArray = line.split("\\$");
+
+                /** Check if the message string is illegal */
+                if (messageArray.length < 4) {
+                    continue;
+                }
+
+                /** If the message's visible date is 0,
+                 *  means that message is visible and can be pulled */
+                long visibleDate = Long.parseLong(messageArray[1]);
+                if (visibleDate == 0 && message == null) {
+                    message = createMessageByMessageString(line);
+                    line = createMessageString(message);
+                    bufferedWriter.write(line);
+                } else {
+                    bufferedWriter.write(line);
+                    bufferedWriter.write(System.lineSeparator());
+                }
+            }
+
+            bufferedReader.close();
+            inputStreamReader.close();
+            fileInputStream.close();
+
+            bufferedWriter.close();
+            outputStreamWriter.close();
+            fileOutputStream.close();
+
+        } catch (IOException e) {
+            System.out.println(e.getMessage());
+        }
+
+        return message;
+    }
+
+    private Message createMessageByMessageString(String messageString) {
+        String[] messageArray = messageString.split("\\$");
+
+        int visibleTimeout = Integer.parseInt(messageArray[2]);
+
+        int msgContentStartIdx = searchMessageContentStartIdx(messageString);
+        String messageContent = messageString.substring(msgContentStartIdx);
+        Message message = new Message(messageContent, visibleTimeout);
+
+        /** Keep the messageId as old messageId */
+        String messageId = messageArray[0];
+        message.setMessageId(messageId);
+
+        /** Set message visible date */
+        message.setVisibleDate(QueueVisibilityTimeout.createVisibleDate(visibleTimeout));
+
+        return message;
+    }
+
+    private int searchMessageContentStartIdx(String messageString) {
+        int msgIdEndIdx = messageString.indexOf('$');
+        int visibleDateEndIdx = messageString.indexOf('$', msgIdEndIdx + 1);
+        int visibleTimeoutIdx = messageString.indexOf('$', visibleDateEndIdx + 1);
+        return visibleTimeoutIdx + 1;
     }
 
     private void writeMessageIntoMessageFile(File messageFile, Message message) {
@@ -71,7 +173,7 @@ public class InFileQueue {
             outputStreamWriter.close();
             fileOutputStream.close();
         } catch (IOException e) {
-            e.printStackTrace();
+            System.out.println(e.getMessage());
         }
     }
 
@@ -93,7 +195,15 @@ public class InFileQueue {
     private String createMessageString(Message message) {
         String msgStr = message.getMessageId();
         msgStr = msgStr + "$";
-        msgStr = msgStr + 0;
+
+        if (message.getVisibleDate() == null) {
+            /** Message is in visible state */
+            msgStr = msgStr + 0;
+        } else {
+            /** Message is in invisible state */
+            msgStr = msgStr + message.getVisibleDate().getTime();
+        }
+
         msgStr = msgStr + "$";
         msgStr = msgStr + message.getVisibleTimeout();
         msgStr = msgStr + "$";
