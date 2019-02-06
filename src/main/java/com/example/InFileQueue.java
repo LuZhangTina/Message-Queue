@@ -1,6 +1,7 @@
 package com.example;
 
 import java.io.File;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created by tina on 2019/2/6.
@@ -21,6 +22,16 @@ public class InFileQueue {
         return this.fileRootPath;
     }
 
+    public File getLockFile() {
+        String lockFilePath = getLockFilePath();
+        return new File(lockFilePath);
+    }
+
+    public File getMessageFile() {
+        String messageFilePath = getMessageFilePath();
+        return new File(messageFilePath);
+    }
+
     public String getLockFilePath() {
         String queueName = getQueueName();
         String filePath = getFileRootPath();
@@ -33,5 +44,19 @@ public class InFileQueue {
         String filePath = getFileRootPath();
         String lockFilePath = filePath + queueName + "/message";
         return lockFilePath;
+    }
+
+    private void lockQueue(File lockFile) {
+        while(!lockFile.mkdir()) {
+            try {
+                TimeUnit.MILLISECONDS.sleep(50);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private void unlockQueue(File lockFile) {
+        lockFile.delete();
     }
 }
