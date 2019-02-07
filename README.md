@@ -112,3 +112,52 @@ The QueueService interface to cater for the essential actions:
         
 ```
 #### File-based queue
+```
+       +------------------------+  -----> InFileQueueService
+       |    sqs/queue1/message -+-------> each message file is a queue 
+       |    sqs/queue1/.lock/   |         the subfolder under sqs/ named as the queue name
+       |    sqs/queue2/message  |
+       |    sqs/queue2/.lock/   |
+       |          ...           |
+   +---+--- sqs/queueN/message  |
+   |   |    sqs/queueN/.lock/  -+-------> .lock/ folder use to make sure not only thread-safe
+   |   |                        |         in a single VM, but also inter-process safe when used
+   |   |                        |         concurrently in multiple VMs
+   |   +------------------------+
+   |
+   +----------------+         +---------> when pull message, create a new file, read each line of message file
+                    |         |           the first message in visible state is the message can be pulled.
+                    |         |           modify the message's visible date to the time when pull happened plus a visible timeout
+                    |         |           write the message string to new file. The rest lines write into new file one by one
+                    |         |           rename the new file to message
+                    |         |           
+                   \|/        |
+       +----------------------|---------------------------------------------+  -----> InFileQueue
+       |12345$1549521076609$2$hello                                         |         This is a file
+       |23456$0$5$world                                                     |         each line is a message
+       |...                                                                 |
+       |56789$0$3$Java                                                      |
+       |messageId$visibleDateInMillisecond$visibleTimeout$messageContent    |
+       +----------|---------------------------|-----------------------------+
+                  |          /|\              |
+                  |           |               +-------- push message in to file end
+                  |           |                         the visibleDateInMillisecond is 0
+                  |           |                         which means the message is visible can be pulled
+                  |           |
+                  |           |
+                  |           |
+               Message      Message covert to string to store in file                 
+                  |           |
+                 \|/          |
+         +-----------------------+  -----> Message
+         |    visibleTimeout  ---+-------> the period in second that the pulled out message can be deleted
+         |-----------------------|
+         |         data       ---+-------> message content
+         |-----------------------|
+         |       messageId    ---+-------> unique Id, when push message to queue, assign one
+         |-----------------------|
+         |      visibleDate   ---+-------> the visible date is generated when the pull action happens 
+         +-----------------------+         use the date when pull happend plus a visible timeout
+                                           to generate a visible date
+        
+```
