@@ -90,6 +90,7 @@ The QueueService interface to cater for the essential actions:
     |            |         |--------------- push message to bottom
     |            |                          the message has a null visible date
     |            |                          which means the message is visible
+    |            |
     |------------+------------------------> timer use to scan the queue
                  |                          if a message is in invisible state
                  |                          and the visible date is a past time
