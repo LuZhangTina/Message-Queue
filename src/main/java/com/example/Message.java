@@ -18,7 +18,7 @@ public class Message {
     private Date visibleDate;
 
     Message(String data) {
-        this.visibleTimeout = QueueVisibilityTimeout.getDefaultVisibilityTimeout();
+        this.visibleTimeout = QueueProperties.getDefaultVisibilityTimeout();
         this.data = data;
         this.messageId = UUID.randomUUID().toString();
         this.visibleDate = null;

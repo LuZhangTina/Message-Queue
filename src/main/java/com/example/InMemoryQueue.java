@@ -75,7 +75,7 @@ public class InMemoryQueue {
         }
 
         /** Make the message invisible by setting the visible date of the message */
-        Date date = QueueVisibilityTimeout.createVisibleDate(messageFromQueue.getVisibleTimeout());
+        Date date = QueueProperties.createVisibleDate(messageFromQueue.getVisibleTimeout());
         messageFromQueue.setVisibleDate(date);
         return messageFromQueue;
     }

@@ -1,55 +1,18 @@
 package com.example;
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
 /**
- * Created by tina on 2019/2/5.
+ * Created by tina on 2019/2/7.
  */
-public class InMemoryQueueService implements QueueService {
-    private Map<String, InMemoryQueue> queues;
-
-    public InMemoryQueueService() {
-        this.queues = new ConcurrentHashMap<>();
-    }
-
-    private Map<String, InMemoryQueue> getQueues() {
-        return this.queues;
-    }
-
-    public synchronized InMemoryQueue getQueueByName(String queueName) {
-        Map<String, InMemoryQueue> queues = getQueues();
-        if (queues.containsKey(queueName)) {
-            return queues.get(queueName);
-        } else {
-            return null;
-        }
-    }
-
-    public synchronized InMemoryQueue createQueueByName(String queueName) {
-        Map<String, InMemoryQueue> queues = getQueues();
-        if (queues.containsKey(queueName)) {
-            return queues.get(queueName);
-        } else {
-            InMemoryQueue queue = new InMemoryQueue();
-            queues.put(queueName, queue);
-            return queue;
-        }
+public class InFileQueueService implements QueueService {
+    public InFileQueueService() {
+        // do nothing
     }
 
     @Override
     public boolean push(String queueUrl, Integer visibilityTimeout, String... messages) {
-        /** Get queue name from URL, if there is no valid queueName, push fails */
         String queueName = QueueProperties.getQueueNameByUrl(queueUrl);
         if (queueName == null) {
             return false;
-        }
-
-        /** Find the queue named as queueName.
-         *  If there is no specified queue, create a new queue with the queueName */
-        InMemoryQueue queue = getQueueByName(queueName);
-        if (queue == null) {
-            queue = createQueueByName(queueName);
         }
 
         int msgVisibleTimeout;
@@ -70,9 +33,10 @@ public class InMemoryQueueService implements QueueService {
         }
 
         /**  add messages one by one in the end of the queue */
+        InFileQueue fileQueue = new InFileQueue(queueName);
         for (String data : messages) {
             Message messageNode = new Message(data, msgVisibleTimeout);
-            queue.push(messageNode);
+            fileQueue.push(messageNode);
         }
 
         return true;
@@ -87,14 +51,9 @@ public class InMemoryQueueService implements QueueService {
             return null;
         }
 
-        /** Find the queue named as queueName.
-         *  If there is no specified queue, pull fails, return null */
-        InMemoryQueue queue = getQueueByName(queueName);
-        if (queue == null) {
-            return null;
-        }
+        InFileQueue fileQueue = new InFileQueue(queueName);
 
-        return queue.pull();
+        return fileQueue.pull();
     }
 
     @Override
@@ -106,18 +65,16 @@ public class InMemoryQueueService implements QueueService {
             return false;
         }
 
-        /** Find the queue named as queueName.
-         *  If there is no specified queue, delete fails, return false */
-        InMemoryQueue queue = getQueueByName(queueName);
-        if (queue == null) {
-            return false;
-        }
-
         /** Input messageId is illegal, return false */
         if (messageId == null || messageId.length() == 0) {
             return false;
         }
 
-        return queue.delete(messageId);
+        InFileQueue fileQueue = new InFileQueue(queueName);
+        return fileQueue.delete(messageId);
+    }
+
+    public InFileQueue getInFileQueue(String queueName) {
+        return new InFileQueue(queueName);
     }
 }

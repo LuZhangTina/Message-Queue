@@ -8,25 +8,25 @@ import java.util.Date;
 /**
  * Created by tina on 2019/2/4.
  */
-public class QueueVisibilityTimeoutTest {
+public class QueuePropertiesTest {
     @Test
     public void testGetMaxVisibilityTimeout() {
-        Assert.assertEquals(43200, QueueVisibilityTimeout.getMaxVisibilityTimeout());
+        Assert.assertEquals(43200, QueueProperties.getMaxVisibilityTimeout());
     }
 
     @Test
     public void testGetMinVisibilityTimeout() {
-        Assert.assertEquals(0, QueueVisibilityTimeout.getMinVisibilityTimeout());
+        Assert.assertEquals(0, QueueProperties.getMinVisibilityTimeout());
     }
 
     @Test
     public void testGetDefaultVisibilityTimeout() {
-        Assert.assertEquals(30, QueueVisibilityTimeout.getDefaultVisibilityTimeout());
+        Assert.assertEquals(30, QueueProperties.getDefaultVisibilityTimeout());
     }
 
     @Test
     public void testCreateVisibleDate() {
-        Date date = QueueVisibilityTimeout.createVisibleDate(30);
+        Date date = QueueProperties.createVisibleDate(30);
         Assert.assertNotNull(date);
     }
 }

@@ -109,6 +109,12 @@ public class InFileQueue {
         File backupMessageFile = getBackupMessageFile();
 
         lockQueue(lockFile);
+
+        if (!messageFile.exists()) {
+            unlockQueue(lockFile);
+            return null;
+        }
+
         Message message = getFirstVisibleMessageFromMessageFile(messageFile, backupMessageFile);
         backupMessageFile.renameTo(messageFile);
         unlockQueue(lockFile);
@@ -126,6 +132,12 @@ public class InFileQueue {
         File backupMessageFile = getBackupMessageFile();
 
         lockQueue(lockFile);
+
+        if (!messageFile.exists()) {
+            unlockQueue(lockFile);
+            return false;
+        }
+
         boolean result = deleteMessageByMessageId(messageFile, backupMessageFile, messageId);
         backupMessageFile.renameTo(messageFile);
 
@@ -295,6 +307,9 @@ public class InFileQueue {
                     if (visibleDate != 0) {
                         result = true;
                         continue;
+                    } else {
+                        bufferedWriter.write(line);
+                        bufferedWriter.write(System.lineSeparator());
                     }
                 } else {
                     bufferedWriter.write(line);
@@ -331,7 +346,7 @@ public class InFileQueue {
         message.setMessageId(messageId);
 
         /** Set message visible date */
-        message.setVisibleDate(QueueVisibilityTimeout.createVisibleDate(visibleTimeout));
+        message.setVisibleDate(QueueProperties.createVisibleDate(visibleTimeout));
 
         return message;
     }

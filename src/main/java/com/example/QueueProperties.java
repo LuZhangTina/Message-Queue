@@ -6,7 +6,7 @@ import java.util.Date;
 /**
  * Created by tina on 2019/2/4.
  */
-public class QueueVisibilityTimeout {
+public class QueueProperties {
     private static final int MAX_TIMEOUT_SECONDS = 43200;
     private static final int MIN_TIMEOUT_SECONDS = 0;
     private static final int DEFAULT_TIMEOUT_SECONDS = 30;
@@ -27,5 +27,19 @@ public class QueueVisibilityTimeout {
         Calendar calendar = Calendar.getInstance();
         calendar.add(Calendar.SECOND, visibleTimeout);
         return calendar.getTime();
+    }
+
+    public static String getQueueNameByUrl(String queueUrl) {
+        if (queueUrl == null) {
+            return null;
+        }
+
+        int index = queueUrl.lastIndexOf('/');
+        if (index == -1) {
+            return null;
+        }
+
+        String queueName = queueUrl.substring(index + 1);
+        return queueName;
     }
 }
