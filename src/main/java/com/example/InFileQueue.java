@@ -1,7 +1,6 @@
 package com.example;
 
 import java.io.*;
-import java.util.Date;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -83,6 +82,23 @@ public class InFileQueue {
         return message;
     }
 
+    public boolean delete(String messageId) {
+        if (messageId == null || messageId.length() == 0) {
+            return false;
+        }
+
+        File lockFile = getLockFile();
+        File messageFile = getMessageFile();
+        File backupMessageFile = getBackupMessageFile();
+
+        lockQueue(lockFile);
+        boolean result = deleteMessageByMessageId(messageFile, backupMessageFile, messageId);
+        backupMessageFile.renameTo(messageFile);
+        unlockQueue(lockFile);
+
+        return result;
+    }
+
     private Message getFirstVisibleMessageFromMessageFile(File messageFile, File backupMessageFile) {
         Message message = null;
         try {
@@ -132,6 +148,60 @@ public class InFileQueue {
         }
 
         return message;
+    }
+
+    private boolean deleteMessageByMessageId(File messageFile, File backupMessageFile, String msgIdTobeDeleted) {
+        boolean result = false;
+        try {
+            /** Create a read buffer from message file */
+            FileInputStream fileInputStream = new FileInputStream(messageFile);
+            InputStreamReader inputStreamReader = new InputStreamReader(fileInputStream, "UTF-8");
+            BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
+
+            /** Create a write buffer from backupMessage file */
+            FileOutputStream fileOutputStream = new FileOutputStream(backupMessageFile, true);
+            OutputStreamWriter outputStreamWriter = new OutputStreamWriter(fileOutputStream, "UTF-8");
+            BufferedWriter bufferedWriter = new BufferedWriter(outputStreamWriter);
+
+            String line;
+            String[] messageArray;
+            while ((line = bufferedReader.readLine()) != null) {
+                messageArray = line.split("\\$");
+
+                /** Check if the message string is illegal */
+                if (messageArray.length < 4) {
+                    continue;
+                }
+
+                /** Get messageId */
+                String msgIdFromQueue = messageArray[0];
+                if (msgIdFromQueue.equals(msgIdTobeDeleted)) {
+                    /** If the message's visible date is not 0,
+                     *  means that message is invisible and can be deleted */
+                    long visibleDate = Long.parseLong(messageArray[1]);
+                    if (visibleDate != 0) {
+                        result = true;
+                        continue;
+                    }
+                } else {
+                    bufferedWriter.write(line);
+                    bufferedWriter.write(System.lineSeparator());
+                }
+            }
+
+            bufferedReader.close();
+            inputStreamReader.close();
+            fileInputStream.close();
+
+            bufferedWriter.close();
+            outputStreamWriter.close();
+            fileOutputStream.close();
+
+        } catch (IOException e) {
+            System.out.println(e.getMessage());
+        }
+
+        return result;
     }
 
     private Message createMessageByMessageString(String messageString) {

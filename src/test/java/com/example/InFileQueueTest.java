@@ -10,24 +10,24 @@ import java.io.File;
  * Created by tina on 2019/2/6.
  */
 public class InFileQueueTest {
-//    @After
-//    public void removeFilesUnderFileRootPath() {
-//        InFileQueue inFileQueue = new InFileQueue("myQueue1");
-//        String fileRootPath = inFileQueue.getFileRootPath();
-//        File rootFolder = new File(fileRootPath);
-//        deleteFiles(rootFolder);
-//    }
-//
-//    public void deleteFiles(File rootFolder) {
-//        File[] files = rootFolder.listFiles();
-//        for (File file : files) {
-//            if (file.isFile()) {
-//                file.delete();
-//            } else {
-//                deleteFiles(file);
-//            }
-//        }
-//    }
+    @After
+    public void removeFilesUnderFileRootPath() {
+        InFileQueue inFileQueue = new InFileQueue("myQueue1");
+        String fileRootPath = inFileQueue.getFileRootPath();
+        File rootFolder = new File(fileRootPath);
+        deleteFiles(rootFolder);
+    }
+
+    public void deleteFiles(File rootFolder) {
+        File[] files = rootFolder.listFiles();
+        for (File file : files) {
+            if (file.isFile()) {
+                file.delete();
+            } else {
+                deleteFiles(file);
+            }
+        }
+    }
 
     @Test
     public void testInFileQueueLockFilePath() {
@@ -70,5 +70,24 @@ public class InFileQueueTest {
         Assert.assertEquals("hel$lo$", message1FromQueue.getData());
         Assert.assertEquals("world", message2FromQueue.getData());
         Assert.assertNull(message3FromQueue);
+    }
+
+    @Test
+    public void testInFileQueueDelete() {
+        InFileQueue inFileQueue = new InFileQueue("myQueue1");
+        Message message1 = new Message("hel$lo$", 2);
+        Message message2 = new Message("world", 3);
+        Assert.assertTrue(inFileQueue.push(message1));
+        Assert.assertTrue(inFileQueue.push(message2));
+
+        Message message1FromQueue = inFileQueue.pull();
+        Message message2FromQueue = inFileQueue.pull();
+        Assert.assertEquals("hel$lo$", message1FromQueue.getData());
+        Assert.assertEquals("world", message2FromQueue.getData());
+
+        Message message3 = new Message("java", 3);
+        Assert.assertTrue(inFileQueue.push(message3));
+
+        Assert.assertTrue(inFileQueue.delete(message2FromQueue.getMessageId()));
     }
 }
