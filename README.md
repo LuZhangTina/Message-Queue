@@ -1,19 +1,19 @@
-*** SQS-Simulation
+### SQS-Simulation
 This project is to design and implement a AWS SQS simulation that you can run locally and test against.
 
-*** Background
+### Background
 Amazon's SQS do not come with an offline implementation suitable for local development and testing.
 The context of this project is to resolve this deficiency by designing a simple
 message-queue API that supports three implementations:
 
- - an in-memory queue, suitable for same-JVM producers and consumers;
+ - an in-memory queue, suitable for same-JVM producers and consumers
 
  - a file-based queue, suitable for same-host producers and consumers, but
-   potentially different JVMs; and
+   potentially different JVMs
 
  - an adapter for a production queue service, such as SQS.
 
-*** Behavior
+### Behavior
 In particular, the message queue simulation is the following properties:
 
  - multiplicity
@@ -36,15 +36,15 @@ In particular, the message queue simulation is the following properties:
    visible at the head of the queue again, ready to be delivered to another
    consumer.
    
-*** Interface
+### Interface
 The QueueService interface to cater for the essential actions:
+
  - push     pushes messages onto a specified queue
  
  - pull     receives a single message from a specified queue
  
  - delete   deletes a received message
  
-*** Description of Implement
-***** In-memory queue
-
-***** File-based queue
+### Description of Implement
+#### In-memory queue
+#### File-based queue
