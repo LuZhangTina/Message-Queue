@@ -47,4 +47,67 @@ The QueueService interface to cater for the essential actions:
  
 ### Description of Implement
 #### In-memory queue
+```
+        +-------------------------+  ----> InMemoryQueueService
+        | +---------------------+ |  -----
+        | |       queue 1       | |    |
+        | +---------------------+ |    |
+        | +---------------------+ |    |
+        | |       queue 2       | |  ConcurrentHashMap<queueName, InMemoryQueue>
+        | +---------------------+ |    |
+        |           ...           |    |
+        | +---------------------+ |    |
+        | |       queue n       | |    |
+        | +----------|----------+ |  -----     
+        +------------|------------+
+                     |
+                InMemoryQueue
+                     |
+                     |     |--------------> pull from top
+                     |     |                when pull, tag the message with a non-nulll visible date
+                     |     |                return the message, but not poll the message from queue
+                     |     |
+                     |     |
+                    \|/    |                
+ ------ +------------------|-------+  ----> InMemoryQueue
+    |   |           top    |       |
+    |   | +----------------------+ |  -----
+    |   | |     message 1        | |    |
+    |   | +----------------------+ |    |
+    |   | +----------------------+ |    |
+    |   | |     message 2        |-+----+--> delete a specified message 
+  timer | +----------------------+ |    |    when delete the message
+    |   |                          |    |    the message should have a non-null visible date
+    |   |          ...             |    |
+    |   |                          |    |
+    |   |                          |  ConcurrentLinkedQueue<Message>
+    |   | +----------------------+ |    | 
+    |   | |     message n        | |    |
+    |   | +------|---------------+ |  -----
+    |   |        |         ^       |
+    |   |        | bottom  |       |
+ ------ +--------|---------|-------+
+    |            |         |--------------- push message to bottom
+    |            |                          the message has a null visible date
+    |            |                          which means the message is visible
+    |------------+------------------------> timer use to scan the queue
+                 |                          if a message is in invisible state
+                 |                          and the visible date is a past time
+                 |                          set the message to visible state
+                 |                          which means the message can be pulled again
+              Message                       
+                 |
+                \|/
+        +-----------------------+  -----> Message
+        |    visibleTimeout  ---+-------> the period in second that the pulled out message can be deleted
+        |-----------------------|
+        |         data       ---+-------> message content
+        |-----------------------|
+        |       messageId    ---+-------> unique Id, when push message to queue, assign one
+        |-----------------------|
+        |      visibleDate   ---+-------> the visible date is generated when the pull action happens 
+        +-----------------------+         use the date when pull happend plus a visible timeout
+                                          to generate a visible date
+        
+```
 #### File-based queue
