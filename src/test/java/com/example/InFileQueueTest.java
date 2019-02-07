@@ -90,4 +90,26 @@ public class InFileQueueTest {
 
         Assert.assertTrue(inFileQueue.delete(message2FromQueue.getMessageId()));
     }
+
+    @Test
+    public void testInFileQueueVisibleTimeout() {
+        InFileQueue inFileQueue = new InFileQueue("myQueue1");
+        Message message1 = new Message("hel$lo$", 0);
+        Message message2 = new Message("world", 0);
+        Assert.assertTrue(inFileQueue.push(message1));
+        Assert.assertTrue(inFileQueue.push(message2));
+
+        Message message1FromQueue = inFileQueue.pull();
+        Message message2FromQueue = inFileQueue.pull();
+        Assert.assertEquals("hel$lo$", message1FromQueue.getData());
+        Assert.assertEquals("world", message2FromQueue.getData());
+
+        /** Mock timer triggers message update */
+        inFileQueue.updateMessageIntoVisibleState();
+
+        Message message3FromQueue = inFileQueue.pull();
+        Message message4FromQueue = inFileQueue.pull();
+        Assert.assertEquals("hel$lo$", message3FromQueue.getData());
+        Assert.assertEquals("world", message4FromQueue.getData());
+    }
 }

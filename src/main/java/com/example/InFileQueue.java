@@ -1,6 +1,8 @@
 package com.example;
 
 import java.io.*;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -9,9 +11,18 @@ import java.util.concurrent.TimeUnit;
 public class InFileQueue {
     private final String fileRootPath = "sqs/";
     private String queueName;
+    private Timer timer;
+    private TimerTask timerTask;
 
     public InFileQueue(String queueName) {
         this.queueName = queueName;
+        this.timer = new Timer();
+        this.timerTask = new TimerTask() {
+            @Override
+            public void run() {
+                updateMessageIntoVisibleState();
+            }
+        };
     }
 
     public String getQueueName() {
@@ -20,6 +31,14 @@ public class InFileQueue {
 
     public String getFileRootPath() {
         return this.fileRootPath;
+    }
+
+    public Timer getTimer() {
+        return this.timer;
+    }
+
+    public TimerTask getTimerTask() {
+        return this.timerTask;
     }
 
     public File getLockFile() {
@@ -63,7 +82,22 @@ public class InFileQueue {
         File messageFile = getMessageFile();
 
         lockQueue(lockFile);
+
+        /** If message file doesn't exist, start timer and create message file*/
+        if (!messageFile.exists()) {
+            Timer timer = getTimer();
+            TimerTask timerTask = getTimerTask();
+            timer.schedule(timerTask, 0, 1000);
+
+            try {
+                messageFile.createNewFile();
+            } catch (IOException e) {
+                System.out.println(e.getMessage());
+            }
+        }
+
         writeMessageIntoMessageFile(messageFile, message);
+
         unlockQueue(lockFile);
 
         return true;
@@ -94,9 +128,88 @@ public class InFileQueue {
         lockQueue(lockFile);
         boolean result = deleteMessageByMessageId(messageFile, backupMessageFile, messageId);
         backupMessageFile.renameTo(messageFile);
+
+        /** If message file is empty, then stop the timer and delete the message file */
+        if (messageFile.length() == 0) {
+            Timer timer = getTimer();
+            timer.cancel();
+            messageFile.delete();
+        }
+
         unlockQueue(lockFile);
 
         return result;
+    }
+
+    public void updateMessageIntoVisibleState() {
+        File lockFile = getLockFile();
+        File messageFile = getMessageFile();
+        File backupMessageFile = getBackupMessageFile();
+
+        lockQueue(lockFile);
+
+        if (!messageFile.exists()) {
+            unlockQueue(lockFile);
+            return;
+        }
+
+        try {
+            /** Create a read buffer from message file */
+            FileInputStream fileInputStream = new FileInputStream(messageFile);
+            InputStreamReader inputStreamReader = new InputStreamReader(fileInputStream, "UTF-8");
+            BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
+
+            /** Create a write buffer from backupMessage file */
+            FileOutputStream fileOutputStream = new FileOutputStream(backupMessageFile, true);
+            OutputStreamWriter outputStreamWriter = new OutputStreamWriter(fileOutputStream, "UTF-8");
+            BufferedWriter bufferedWriter = new BufferedWriter(outputStreamWriter);
+
+            String line;
+            String[] messageArray;
+            while ((line = bufferedReader.readLine()) != null) {
+                messageArray = line.split("\\$");
+
+                /** Check if the message string is illegal */
+                if (messageArray.length < 4) {
+                    continue;
+                }
+
+                /** If the message's visible date is not 0,
+                 *  means that message is invisible might need to set to visible */
+                long visibleDate = Long.parseLong(messageArray[1]);
+                if (visibleDate != 0) {
+                    /** If the message's visibleDate is before the current date,
+                     *  then the message need to be set to visible again */
+                    if (visibleDate < System.currentTimeMillis()) {
+                        Message message = createMessageByMessageString(line);
+                        message.setVisibleDate(null);
+                        line = createMessageString(message);
+                        bufferedWriter.write(line);
+                    } else {
+                        bufferedWriter.write(line);
+                        bufferedWriter.write(System.lineSeparator());
+                    }
+                } else {
+                    bufferedWriter.write(line);
+                    bufferedWriter.write(System.lineSeparator());
+                }
+            }
+
+            bufferedReader.close();
+            inputStreamReader.close();
+            fileInputStream.close();
+
+            bufferedWriter.close();
+            outputStreamWriter.close();
+            fileOutputStream.close();
+
+        } catch (IOException e) {
+            System.out.println(e.getMessage());
+        }
+
+        backupMessageFile.renameTo(messageFile);
+
+        unlockQueue(lockFile);
     }
 
     private Message getFirstVisibleMessageFromMessageFile(File messageFile, File backupMessageFile) {
