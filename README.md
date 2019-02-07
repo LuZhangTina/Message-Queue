@@ -130,21 +130,33 @@ The QueueService interface to cater for the essential actions:
                     |         |           modify the message's visible date to the time when pull happened plus a visible timeout
                     |         |           write the message string to new file. The rest lines write into new file one by one
                     |         |           rename the new file to message
-                    |         |           
+                    |         |
+                    |         |---------> when delete message, create a new file, read each line of message file
+                    |         |           if the message id is the one to be deleted, and message is in invisible state
+                    |         |           means the message can be deleted, which means discard this line
+                    |         |           other lines write in new file one by one
+                    |         |           rename the new file to message
                    \|/        |
-       +----------------------|---------------------------------------------+  -----> InFileQueue
-       |12345$1549521076609$2$hello                                         |         This is a file
-       |23456$0$5$world                                                     |         each line is a message
-       |...                                                                 |
-       |56789$0$3$Java                                                      |
-       |messageId$visibleDateInMillisecond$visibleTimeout$messageContent    |
-       +----------|---------------------------|-----------------------------+
-                  |          /|\              |
-                  |           |               +-------- push message in to file end
-                  |           |                         the visibleDateInMillisecond is 0
-                  |           |                         which means the message is visible can be pulled
-                  |           |
-                  |           |
+ ----- +----------------------|---------------------------------------------+  -----> InFileQueue
+   |   |12345$1549521076609$2$hello                                         |         This is a file
+   |   |23456$0$5$world                                                     |         each line is a message
+ timer |...                                                                 |
+   |   |56789$0$3$Java                                                      |
+   |   |messageId$visibleDateInMillisecond$visibleTimeout$messageContent    |
+ ----- +----------|---------------------------^-----------------------------+
+   |              |          /|\              |
+   |              |           |               +-------- push message in to file end
+   |              |           |                         the visibleDateInMillisecond is 0
+   |              |           |                         which means the message is visible can be pulled
+   |              |           |
+   +--------------+-----------+-----------------------> timer use to scan the mesage file              
+                  |           |                         find out the message which is in invisible date
+                  |           |                         but the visible date is a past time
+                  |           |                         modify the message's visibeDate to 0
+                  |           |                         means the message is visible and can be pulled again
+                  |           |                         write message to new file
+                  |           |                         other lines write into new file one by one
+                  |           |                         rename the new file to message
                   |           |
                Message      Message covert to string to store in file                 
                   |           |
