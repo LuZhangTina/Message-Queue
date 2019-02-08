@@ -140,7 +140,7 @@ The QueueService interface to cater for the essential actions:
    |   |23456$0$world                                                       |         each line is a message
  timer |...                                                                 |
    |   |56789$0$Java                                                        |
-   |   |messageId$visibleDateInMillisecond$messageContent                   |
+   |   |receiptHandle$visibleDateInMillisecond$messageContent               |
  ----- +----------|---------------------------^-----------------------------+
    |              |          /|\              |
    |              |           |               +-------- push message in to file end
