@@ -10,31 +10,17 @@ import java.util.Date;
  */
 public class MessageTest {
     @Test
-    public void testGetMessageId() {
-        Message msg = new Message("hello", 2);
-        String str = msg.getMessageId();
+    public void testGetMessageReceiptHandle() {
+        Message msg = new Message("hello");
+        String str = msg.getReceiptHandle();
         Assert.assertNotNull(str);
     }
 
     @Test
     public void testGetMessageData() {
-        Message msg = new Message("hello", 2);
+        Message msg = new Message("hello");
         String str = msg.getData();
         Assert.assertEquals("hello", str);
-    }
-
-    @Test
-    public void testGetMessageVariableVisibilityTime() {
-        Message msg = new Message("hello", 2);
-        int visibleTimeout = msg.getVisibleTimeout();
-        Assert.assertEquals(2, visibleTimeout);
-    }
-
-    @Test
-    public void testGetMessageDefaultVisibilityTime() {
-        Message msg = new Message("hello");
-        int visibleTimeout = msg.getVisibleTimeout();
-        Assert.assertEquals(30, visibleTimeout);
     }
 
     @Test

@@ -38,7 +38,7 @@ public class InMemoryQueueService implements QueueService {
     }
 
     @Override
-    public boolean push(String queueUrl, Integer visibilityTimeout, String... messages) {
+    public boolean push(String queueUrl, String... messages) {
         /** Get queue name from URL, if there is no valid queueName, push fails */
         String queueName = QueueProperties.getQueueNameByUrl(queueUrl);
         if (queueName == null) {
@@ -52,18 +52,6 @@ public class InMemoryQueueService implements QueueService {
             queue = createQueueByName(queueName);
         }
 
-        int msgVisibleTimeout;
-        if (visibilityTimeout == null) {
-            /** If the parameter of visibleTimeout is null, use the default timeout which is 30 seconds */
-            msgVisibleTimeout = QueueProperties.getDefaultVisibilityTimeout();
-        } else {
-            /** If the visibility timeout if out of the valid range, push fails */
-            msgVisibleTimeout = visibilityTimeout.intValue();
-            if (msgVisibleTimeout < QueueProperties.getMinVisibilityTimeout() || msgVisibleTimeout > QueueProperties.getMaxVisibilityTimeout()) {
-                return false;
-            }
-        }
-
         /** If there is nothing to be pushed, push success */
         if (messages == null || messages.length == 0) {
             return true;
@@ -71,7 +59,7 @@ public class InMemoryQueueService implements QueueService {
 
         /**  add messages one by one in the end of the queue */
         for (String data : messages) {
-            Message messageNode = new Message(data, msgVisibleTimeout);
+            Message messageNode = new Message(data);
             queue.push(messageNode);
         }
 
@@ -79,7 +67,7 @@ public class InMemoryQueueService implements QueueService {
     }
 
     @Override
-    public Message pull(String queueUrl) {
+    public Message pull(String queueUrl, Integer... visibilityTimeout) {
         /** Get queue name from URL.
          *  If there is no valid queueName, pull fails, return null */
         String queueName = QueueProperties.getQueueNameByUrl(queueUrl);
@@ -94,11 +82,21 @@ public class InMemoryQueueService implements QueueService {
             return null;
         }
 
-        return queue.pull();
+        /** If consumer set the legal visibilityTimeout, use the set visibilityTimeout
+         *  otherwise use default visibility timeout */
+        int msgVisibilityTimeout = QueueProperties.getDefaultVisibilityTimeout();
+        if (visibilityTimeout.length == 1) {
+            if (visibilityTimeout[0] >= QueueProperties.getMinVisibilityTimeout()
+                    && visibilityTimeout[0] <= QueueProperties.getMaxVisibilityTimeout()) {
+                msgVisibilityTimeout = visibilityTimeout[0];
+            }
+        }
+
+        return queue.pull(msgVisibilityTimeout);
     }
 
     @Override
-    public boolean delete(String queueUrl, String messageId) {
+    public boolean delete(String queueUrl, String receiptHandle) {
         /** Get queue name from URL.
          *  If there is no valid queueName, delete fails, return false */
         String queueName = QueueProperties.getQueueNameByUrl(queueUrl);
@@ -113,11 +111,11 @@ public class InMemoryQueueService implements QueueService {
             return false;
         }
 
-        /** Input messageId is illegal, return false */
-        if (messageId == null || messageId.length() == 0) {
+        /** Input receiptHandle is illegal, return false */
+        if (receiptHandle == null || receiptHandle.length() == 0) {
             return false;
         }
 
-        return queue.delete(messageId);
+        return queue.delete(receiptHandle);
     }
 }

@@ -65,7 +65,7 @@ The QueueService interface to cater for the essential actions:
                      |
                      |     |--------------> pull from top
                      |     |                when pull, tag the message with a non-nulll visible date
-                     |     |                return the message, but not poll the message from queue
+                     |     |                return the message, but not pop the message from queue
                      |     |
                      |     |
                     \|/    |                
@@ -100,14 +100,12 @@ The QueueService interface to cater for the essential actions:
                  |
                 \|/
         +-----------------------+  -----> Message
-        |    visibleTimeout  ---+-------> the period in second that the pulled out message can be deleted
-        |-----------------------|
         |         data       ---+-------> message content
         |-----------------------|
-        |       messageId    ---+-------> unique Id, when push message to queue, assign one
+        |     receiptHandle  ---+-------> unique Id, when push message to queue, assign one
         |-----------------------|
         |      visibleDate   ---+-------> the visible date is generated when the pull action happens 
-        +-----------------------+         use the date when pull happend plus a visible timeout
+        +-----------------------+         use the date when pull happend plus a visibilityTimeout
                                           to generate a visible date
         
 ```
@@ -127,7 +125,7 @@ The QueueService interface to cater for the essential actions:
    |
    +----------------+         +---------> when pull message, create a new file, read each line of message file
                     |         |           the first message in visible state is the message can be pulled.
-                    |         |           modify the message's visible date to the time when pull happened plus a visible timeout
+                    |         |           modify the message's visible date to the time when pull happened plus a visibilityTimeout
                     |         |           write the message string to new file. The rest lines write into new file one by one
                     |         |           rename the new file to message
                     |         |
@@ -138,11 +136,11 @@ The QueueService interface to cater for the essential actions:
                     |         |           rename the new file to message
                    \|/        |
  ----- +----------------------|---------------------------------------------+  -----> InFileQueue
-   |   |12345$1549521076609$2$hello                                         |         This is a file
-   |   |23456$0$5$world                                                     |         each line is a message
+   |   |12345$1549521076609$hello                                           |         This is a file
+   |   |23456$0$world                                                       |         each line is a message
  timer |...                                                                 |
-   |   |56789$0$3$Java                                                      |
-   |   |messageId$visibleDateInMillisecond$visibleTimeout$messageContent    |
+   |   |56789$0$Java                                                        |
+   |   |messageId$visibleDateInMillisecond$messageContent                   |
  ----- +----------|---------------------------^-----------------------------+
    |              |          /|\              |
    |              |           |               +-------- push message in to file end
@@ -162,14 +160,12 @@ The QueueService interface to cater for the essential actions:
                   |           |
                  \|/          |
          +-----------------------+  -----> Message
-         |    visibleTimeout  ---+-------> the period in second that the pulled out message can be deleted
-         |-----------------------|
          |         data       ---+-------> message content
          |-----------------------|
-         |       messageId    ---+-------> unique Id, when push message to queue, assign one
+         |     receiptHandle  ---+-------> unique Id, when push message to queue, assign one
          |-----------------------|
          |      visibleDate   ---+-------> the visible date is generated when the pull action happens 
-         +-----------------------+         use the date when pull happend plus a visible timeout
+         +-----------------------+         use the date when pull happend plus a visibilityTimeout
                                            to generate a visible date
         
 ```

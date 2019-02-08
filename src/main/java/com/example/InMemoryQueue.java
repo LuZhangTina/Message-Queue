@@ -56,7 +56,7 @@ public class InMemoryQueue {
     }
 
     /** Get First Message from queue */
-    public synchronized Message pull() {
+    public synchronized Message pull(int visibilityTimeout) {
         ConcurrentLinkedQueue<Message> queue = getQueue();
 
         /** Find the first visible message from queue */
@@ -75,24 +75,24 @@ public class InMemoryQueue {
         }
 
         /** Make the message invisible by setting the visible date of the message */
-        Date date = QueueProperties.createVisibleDate(messageFromQueue.getVisibleTimeout());
+        Date date = QueueProperties.createVisibleDate(visibilityTimeout);
         messageFromQueue.setVisibleDate(date);
         return messageFromQueue;
     }
 
-    /** If message with the specified messageId is in the queue and invisible,
+    /** If message with the specified receiptHandle is in the queue and invisible,
      *  delete the message, return true. Otherwise, return false */
-    public synchronized boolean delete(String messageId) {
+    public synchronized boolean delete(String receiptHandle) {
         boolean result = false;
         ConcurrentLinkedQueue<Message> queue = getQueue();
 
-        /** Find the invisible message which has the specified messageId from queue */
+        /** Find the invisible message which has the specified receiptHandle from queue */
         Message messageFromQueue = null;
         Iterator<Message> iterator = queue.iterator();
         while (iterator.hasNext()) {
             messageFromQueue = iterator.next();
             if (messageFromQueue.getVisibleDate() != null) {
-                if (messageFromQueue.getMessageId().equals(messageId)) {
+                if (messageFromQueue.getReceiptHandle().equals(receiptHandle)) {
                     queue.remove(messageFromQueue);
                     result = true;
                     break;
