@@ -169,3 +169,20 @@ The QueueService interface to cater for the essential actions:
                                            to generate a visible date
         
 ```
+#### Adapter of Sqs Queue
+Using AWS API adapt three methods.  
+Implementing push by using 
+```
+SendMessageResult sendMessage(SendMessageRequest var1);
+```
+Implementing pull by using
+```
+ReceiveMessageResult receiveMessage(ReceiveMessageRequest var1);
+```
+Implementing delete by using
+```
+DeleteMessageResult deleteMessage(String var1, String var2);
+```
+In this adapter for AWS FIFO SQS, the messageGroupId is a must parameter for pushing message to queue. 
+Since the task doesn't try to implement all features, the messageGroupId is set as "messageGroupId1"  
+to make sure the push action can be done successfully.

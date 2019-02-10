@@ -3,9 +3,7 @@ package com.example;
 import com.amazonaws.services.sqs.AmazonSQS;
 import com.amazonaws.services.sqs.model.*;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Created by tina on 2019/2/8.
