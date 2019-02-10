@@ -1,30 +1,36 @@
 package com.example;
 
-import com.amazonaws.services.sqs.AmazonSQSClient;
+import com.amazonaws.services.sqs.AmazonSQS;
 import com.amazonaws.services.sqs.model.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by tina on 2019/2/8.
  */
 public class SqsQueueService implements QueueService {
-    private AmazonSQSClient sqsClient;
+    private AmazonSQS sqsClient;
 
-    public SqsQueueService(AmazonSQSClient sqsClient) {
+    public SqsQueueService(AmazonSQS sqsClient) {
         this.sqsClient = sqsClient;
     }
 
-    public AmazonSQSClient getSqsClient() {
+    public AmazonSQS getSqsClient() {
         return this.sqsClient;
     }
 
     @Override
     public boolean push(String queueUrl, String... messages) {
-        AmazonSQSClient sqsClient = getSqsClient();
+        AmazonSQS sqsClient = getSqsClient();
 
         for (String message : messages) {
-            sqsClient.sendMessage(queueUrl, message);
+            SendMessageRequest messageRequest = new SendMessageRequest()
+                    .withQueueUrl(queueUrl)
+                    .withMessageBody(message)
+                    .withMessageGroupId("messageGroupId1");
+            sqsClient.sendMessage(messageRequest);
         }
         return true;
     }
@@ -32,9 +38,11 @@ public class SqsQueueService implements QueueService {
     @Override
     public Message pull(String queueUrl, Integer... visibilityTimeout) {
         Message message = null;
-        AmazonSQSClient sqsClient = getSqsClient();
+        AmazonSQS sqsClient = getSqsClient();
 
-        ReceiveMessageRequest receiveMessageRequest = new ReceiveMessageRequest().withQueueUrl(queueUrl).withMaxNumberOfMessages(1);
+        ReceiveMessageRequest receiveMessageRequest = new ReceiveMessageRequest()
+                .withQueueUrl(queueUrl)
+                .withMaxNumberOfMessages(1);
         if (visibilityTimeout.length == 1) {
             receiveMessageRequest.setVisibilityTimeout(visibilityTimeout[0]);
         }
@@ -52,7 +60,7 @@ public class SqsQueueService implements QueueService {
 
     @Override
     public boolean delete(String queueUrl, String receiptHandle) {
-        AmazonSQSClient sqsClient = getSqsClient();
+        AmazonSQS sqsClient = getSqsClient();
         sqsClient.deleteMessage(queueUrl, receiptHandle);
         return true;
     }
