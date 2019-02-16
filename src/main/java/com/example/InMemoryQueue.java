@@ -16,18 +16,11 @@ public class InMemoryQueue {
      *  The timer aims to find out messages which are not be deleted during visibleTimeout,
      *  Then push those messages in queue top again.
      *  Those messages will be allowed to be pulled by consumers again. */
-    private final Timer timer;
-    private final TimerTask timerTask;
+    private Timer timer;
+    private TimerTask timerTask;
 
     public InMemoryQueue() {
         this.queue = new ConcurrentLinkedQueue<>();
-        this.timer = new Timer();
-        this.timerTask = new TimerTask() {
-            @Override
-            public void run() {
-                resetInvisibleMessageWhichIsTimeoutInQueue();
-            }
-        };
     }
 
     public ConcurrentLinkedQueue<Message> getQueue() {
@@ -48,7 +41,22 @@ public class InMemoryQueue {
          *  then make the messages which are not be deleted during the visibleTimeout visibility again */
         if (queue.isEmpty()) {
             Timer timer = getTimer();
+            if (timer == null) {
+                timer = new Timer();
+                setTimer(timer);
+            }
+
             TimerTask timerTask = getTimerTask();
+            if (timerTask == null) {
+                timerTask = new TimerTask() {
+                    @Override
+                    public void run() {
+                        resetInvisibleMessageWhichIsTimeoutInQueue();
+                    }
+                };
+                setTimerTask(timerTask);
+            }
+
             timer.schedule(timerTask, 0, 1000);
         }
 
@@ -102,8 +110,17 @@ public class InMemoryQueue {
 
         /** If the queue is empty, stop the timer */
         if (queue.isEmpty()) {
+            TimerTask timerTask = getTimerTask();
+            if (timerTask != null) {
+                timerTask.cancel();
+                setTimerTask(null);
+            }
+
             Timer timer = getTimer();
-            timer.cancel();
+            if (timer != null) {
+                timer.cancel();
+                setTimer(null);
+            }
         }
 
         return result;
@@ -133,5 +150,13 @@ public class InMemoryQueue {
 
     private TimerTask getTimerTask() {
         return this.timerTask;
+    }
+
+    private void setTimer(Timer timer) {
+        this.timer = timer;
+    }
+
+    private void setTimerTask(TimerTask timerTask) {
+        this.timerTask = timerTask;
     }
 }

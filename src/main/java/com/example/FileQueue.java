@@ -1,6 +1,7 @@
 package com.example;
 
 import java.io.*;
+import java.util.Date;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
@@ -16,13 +17,6 @@ public class FileQueue {
 
     public FileQueue(String queueName) {
         this.queueName = queueName;
-        this.timer = new Timer();
-        this.timerTask = new TimerTask() {
-            @Override
-            public void run() {
-                updateMessageIntoVisibleState();
-            }
-        };
     }
 
     public String getQueueName() {
@@ -77,6 +71,14 @@ public class FileQueue {
         return lockFilePath;
     }
 
+    public void setTimer(Timer timer) {
+        this.timer = timer;
+    }
+
+    public void setTimerTask(TimerTask timerTask) {
+        this.timerTask = timerTask;
+    }
+
     public boolean push(Message message) {
         File lockFile = getLockFile();
         File messageFile = getMessageFile();
@@ -86,7 +88,22 @@ public class FileQueue {
         /** If message file doesn't exist, start timer and create message file*/
         if (!messageFile.exists()) {
             Timer timer = getTimer();
+            if (timer == null) {
+                timer = new Timer();
+                setTimer(timer);
+            }
+
             TimerTask timerTask = getTimerTask();
+            if (timerTask == null) {
+                timerTask = new TimerTask() {
+                    @Override
+                    public void run() {
+                        updateMessageIntoVisibleState();
+                    }
+                };
+                setTimerTask(timerTask);
+            }
+
             timer.schedule(timerTask, 0, 1000);
 
             try {
@@ -144,7 +161,17 @@ public class FileQueue {
         /** If message file is empty, then stop the timer and delete the message file */
         if (messageFile.length() == 0) {
             Timer timer = getTimer();
-            timer.cancel();
+            TimerTask timerTask = getTimerTask();
+            if (timerTask != null) {
+                timerTask.cancel();
+                setTimerTask(null);
+            }
+
+            if (timer != null) {
+                timer.cancel();
+                setTimer(null);
+            }
+
             messageFile.delete();
         }
 
