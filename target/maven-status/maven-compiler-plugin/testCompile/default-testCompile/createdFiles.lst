@@ -1,0 +1,7 @@
+com/example/QueuePropertiesTest.class
+com/example/MessageTest.class
+com/example/ConfigPropertiesTest.class
+com/example/FileQueueServiceTest.class
+com/example/InMemoryQueueServiceTest.class
+com/example/InMemoryQueueTest.class
+com/example/FileQueueTest.class
