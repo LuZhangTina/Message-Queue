@@ -45,7 +45,7 @@ The QueueService interface to cater for the essential actions:
  
  - delete   deletes a received message
  
-### Description of Implement
+### Description of Implementation
 #### In-memory queue
 ```
         +-------------------------+  ----> InMemoryQueueService
