@@ -1,5 +1,5 @@
 ### MessageQueue
-This project is to design and implement a AWS SQS simulation that you can run locally and test against.
+This project is to design and implement a SQS simulation that you can run locally and test against.
 
 ### Background
 Amazon's SQS do not come with an offline implementation suitable for local development and testing.
