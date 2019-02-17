@@ -1,4 +1,4 @@
-### Message-Queue
+### MessageQueue
 This project is to design and implement a AWS SQS simulation that you can run locally and test against.
 
 ### Background
