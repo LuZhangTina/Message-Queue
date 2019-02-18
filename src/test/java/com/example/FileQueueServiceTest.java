@@ -27,6 +27,10 @@ public class FileQueueServiceTest {
 
     public void deleteFiles(File rootFolder) {
         File[] files = rootFolder.listFiles();
+        if (files == null) {
+            return;
+        }
+
         for (File file : files) {
             if (file.isFile()) {
                 file.delete();

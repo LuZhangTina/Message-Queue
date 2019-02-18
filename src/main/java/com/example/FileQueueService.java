@@ -100,11 +100,8 @@ public class FileQueueService implements QueueService {
         }
 
         /** Find the queue named as queueName.
-         *  If there is no specified queue, delete fails, return false */
-        FileQueue fileQueue = getQueueByName(queueName);
-        if (fileQueue == null) {
-            return false;
-        }
+         *  If there is no specified queue, create the queue */
+        FileQueue fileQueue = getOrCreateFileQueue(queueName);
 
         /** Input receiptHandle is illegal, return false */
         if (receiptHandle == null || receiptHandle.length() == 0) {

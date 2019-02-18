@@ -12,7 +12,7 @@
     <property name="guice.disable.misplaced.annotation.check" value="true"/>
     <property name="java.vm.name" value="Java HotSpot(TM) 64-Bit Server VM"/>
     <property name="file.encoding.pkg" value="sun.io"/>
-    <property name="idea.launcher.port" value="7534"/>
+    <property name="idea.launcher.port" value="7540"/>
     <property name="user.country" value="CN"/>
     <property name="sun.java.launcher" value="SUN_STANDARD"/>
     <property name="sun.os.patch.level" value="unknown"/>
@@ -46,7 +46,7 @@
     <property name="java.vm.specification.version" value="1.8"/>
     <property name="sun.arch.data.model" value="64"/>
     <property name="java.home" value="/Library/Java/JavaVirtualMachines/jdk1.8.0_191.jdk/Contents/Home/jre"/>
-    <property name="sun.java.command" value="com.intellij.rt.execution.application.AppMain org.codehaus.classworlds.Launcher -Didea.version=15.0.2 package"/>
+    <property name="sun.java.command" value="com.intellij.rt.execution.application.AppMain org.codehaus.classworlds.Launcher -Didea.version=15.0.2 install"/>
     <property name="java.specification.vendor" value="Oracle Corporation"/>
     <property name="user.language" value="en"/>
     <property name="awt.toolkit" value="sun.lwawt.macosx.LWCToolkit"/>
@@ -64,10 +64,10 @@
     <property name="ftp.nonProxyHosts" value="local|*.local|169.254/16|*.169.254/16"/>
     <property name="sun.cpu.isalist" value=""/>
   </properties>
-  <testcase classname="com.example.InMemoryQueueServiceTest" name="testPushMessageWhenMessageIsNull" time="0.021"/>
-  <testcase classname="com.example.InMemoryQueueServiceTest" name="testDeleteWhenUrlIsNull" time="0.001"/>
+  <testcase classname="com.example.InMemoryQueueServiceTest" name="testPushMessageWhenMessageIsNull" time="0.023"/>
+  <testcase classname="com.example.InMemoryQueueServiceTest" name="testDeleteWhenUrlIsNull" time="0"/>
   <testcase classname="com.example.InMemoryQueueServiceTest" name="testDeleteWhenUrlIsNotIllegal" time="0"/>
-  <testcase classname="com.example.InMemoryQueueServiceTest" name="testDeleteWhenMessageIdIsNull" time="0"/>
+  <testcase classname="com.example.InMemoryQueueServiceTest" name="testDeleteWhenMessageIdIsNull" time="0.001"/>
   <testcase classname="com.example.InMemoryQueueServiceTest" name="testDeleteMessageInVisibleTimeout" time="0.001"/>
   <testcase classname="com.example.InMemoryQueueServiceTest" name="testPushMessageWhenUrlIsNull" time="0"/>
   <testcase classname="com.example.InMemoryQueueServiceTest" name="testPushMessagesToThreeQueues" time="0.001"/>
@@ -78,6 +78,6 @@
   <testcase classname="com.example.InMemoryQueueServiceTest" name="testPullWhenUrlIsNull" time="0"/>
   <testcase classname="com.example.InMemoryQueueServiceTest" name="testPushMessageWhenUrlIsIllegal" time="0"/>
   <testcase classname="com.example.InMemoryQueueServiceTest" name="testPullWhenUrlIsIllegal" time="0"/>
-  <testcase classname="com.example.InMemoryQueueServiceTest" name="testPushThreeMessages" time="0.001"/>
+  <testcase classname="com.example.InMemoryQueueServiceTest" name="testPushThreeMessages" time="0"/>
   <testcase classname="com.example.InMemoryQueueServiceTest" name="testDeleteWhenQueueIsNotExist" time="0.001"/>
 </testsuite>

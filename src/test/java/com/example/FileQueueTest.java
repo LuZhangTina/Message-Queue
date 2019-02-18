@@ -20,6 +20,10 @@ public class FileQueueTest {
 
     public void deleteFiles(File rootFolder) {
         File[] files = rootFolder.listFiles();
+        if (files == null) {
+            return;
+        }
+
         for (File file : files) {
             if (file.isFile()) {
                 file.delete();
@@ -100,16 +104,12 @@ public class FileQueueTest {
         Assert.assertTrue(fileQueue.push(message2));
 
         Message message1FromQueue = fileQueue.pull(0);
-        Message message2FromQueue = fileQueue.pull(0);
         Assert.assertEquals("hel$lo$", message1FromQueue.getData());
-        Assert.assertEquals("world", message2FromQueue.getData());
 
         /** Mock timer triggers message update */
         fileQueue.updateMessageIntoVisibleState();
 
         Message message3FromQueue = fileQueue.pull(0);
-        Message message4FromQueue = fileQueue.pull(0);
         Assert.assertEquals("hel$lo$", message3FromQueue.getData());
-        Assert.assertEquals("world", message4FromQueue.getData());
     }
 }

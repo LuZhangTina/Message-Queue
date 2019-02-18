@@ -1,5 +1,6 @@
 package com.example;
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -28,5 +29,10 @@ public class QueuePropertiesTest {
     public void testCreateVisibleDate() {
         Date date = QueueProperties.createVisibleDate(30);
         Assert.assertNotNull(date);
+    }
+    @Test
+    public void testGetMsgVisibilityTimeout() {
+        int msgVisibleTimeout = QueueProperties.getMsgVisibilityTimeout();
+        Assert.assertEquals(30, msgVisibleTimeout);
     }
 }
