@@ -175,27 +175,13 @@ public class FileQueue {
     }
 
     private void updateMsgVisibleStateIntoBackupFile(File messageFile, File backupMessageFile) throws IOException {
-        /** Create a read buffer from message file */
-        FileInputStream fileInputStream = new FileInputStream(messageFile);
-        InputStreamReader inputStreamReader = new InputStreamReader(fileInputStream, "UTF-8");
-        BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
-
-        /** Create a write buffer from backupMessage file */
-        FileOutputStream fileOutputStream = new FileOutputStream(backupMessageFile, true);
-        OutputStreamWriter outputStreamWriter = new OutputStreamWriter(fileOutputStream, "UTF-8");
-        BufferedWriter bufferedWriter = new BufferedWriter(outputStreamWriter);
+        FileQueueIOStream fileQueueIOStream = new FileQueueIOStream(messageFile, backupMessageFile).invoke();
+        BufferedReader bufferedReader = fileQueueIOStream.getBufferedReader();
+        BufferedWriter bufferedWriter = fileQueueIOStream.getBufferedWriter();
 
         setMsgVisibleAndWriteIntoBackupFile(bufferedReader, bufferedWriter);
 
-        closeInputStream(fileInputStream, inputStreamReader, bufferedReader);
-
-        closeOutputStream(fileOutputStream, outputStreamWriter, bufferedWriter);
-    }
-
-    private void closeInputStream(FileInputStream fileInputStream, InputStreamReader inputStreamReader, BufferedReader bufferedReader) throws IOException {
-        bufferedReader.close();
-        inputStreamReader.close();
-        fileInputStream.close();
+        fileQueueIOStream.close();
     }
 
     private void setMsgVisibleAndWriteIntoBackupFile(BufferedReader bufferedReader, BufferedWriter bufferedWriter) throws IOException {
@@ -229,22 +215,13 @@ public class FileQueue {
     private Message getFirstVisibleMessageFromMessageFile(File messageFile, File backupMessageFile, int visibilityTimeout) {
         Message message = null;
         try {
-            /** Create a read buffer from message file */
-            FileInputStream fileInputStream = new FileInputStream(messageFile);
-            InputStreamReader inputStreamReader = new InputStreamReader(fileInputStream, "UTF-8");
-            BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
-
-            /** Create a write buffer from backupMessage file */
-            FileOutputStream fileOutputStream = new FileOutputStream(backupMessageFile, true);
-            OutputStreamWriter outputStreamWriter = new OutputStreamWriter(fileOutputStream, "UTF-8");
-            BufferedWriter bufferedWriter = new BufferedWriter(outputStreamWriter);
+            FileQueueIOStream fileQueueIOStream = new FileQueueIOStream(messageFile, backupMessageFile).invoke();
+            BufferedReader bufferedReader = fileQueueIOStream.getBufferedReader();
+            BufferedWriter bufferedWriter = fileQueueIOStream.getBufferedWriter();
 
             message = getMessageAndUpdateBackupFile(visibilityTimeout, bufferedReader, bufferedWriter);
 
-            closeInputStream(fileInputStream, inputStreamReader, bufferedReader);
-
-            closeOutputStream(fileOutputStream, outputStreamWriter, bufferedWriter);
-
+            fileQueueIOStream.close();
         } catch (IOException e) {
             System.out.println(e.getMessage());
         }
@@ -282,21 +259,13 @@ public class FileQueue {
     private boolean deleteMessageByReceiptHandle(File messageFile, File backupMessageFile, String msgReceiptHandleTobeDeleted) {
         boolean result = false;
         try {
-            /** Create a read buffer from message file */
-            FileInputStream fileInputStream = new FileInputStream(messageFile);
-            InputStreamReader inputStreamReader = new InputStreamReader(fileInputStream, "UTF-8");
-            BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
-
-            /** Create a write buffer from backupMessage file */
-            FileOutputStream fileOutputStream = new FileOutputStream(backupMessageFile, true);
-            OutputStreamWriter outputStreamWriter = new OutputStreamWriter(fileOutputStream, "UTF-8");
-            BufferedWriter bufferedWriter = new BufferedWriter(outputStreamWriter);
+            FileQueueIOStream fileQueueIOStream = new FileQueueIOStream(messageFile, backupMessageFile).invoke();
+            BufferedReader bufferedReader = fileQueueIOStream.getBufferedReader();
+            BufferedWriter bufferedWriter = fileQueueIOStream.getBufferedWriter();
 
             result = deleteMessageAndUpdateBackupFile(msgReceiptHandleTobeDeleted, bufferedReader, bufferedWriter);
 
-            closeInputStream(fileInputStream, inputStreamReader, bufferedReader);
-
-            closeOutputStream(fileOutputStream, outputStreamWriter, bufferedWriter);
+            fileQueueIOStream.close();
 
         } catch (IOException e) {
             System.out.println(e.getMessage());
@@ -333,12 +302,6 @@ public class FileQueue {
         return result;
     }
 
-    private void closeOutputStream(FileOutputStream fileOutputStream, OutputStreamWriter outputStreamWriter, BufferedWriter bufferedWriter) throws IOException {
-        bufferedWriter.close();
-        outputStreamWriter.close();
-        fileOutputStream.close();
-    }
-
     private Message createMessageByMessageString(String messageString, int visibilityTimeout) {
         String[] messageArray = messageString.split("\\$");
 
@@ -364,14 +327,13 @@ public class FileQueue {
 
     private void writeMessageIntoMessageFile(File messageFile, Message message) {
         try {
-            FileOutputStream fileOutputStream = new FileOutputStream(messageFile, true);
-            OutputStreamWriter outputStreamWriter = new OutputStreamWriter(fileOutputStream, "UTF-8");
-            BufferedWriter bufferedWriter = new BufferedWriter(outputStreamWriter);
+            FileQueueIOStream fileQueueIOStream = new FileQueueIOStream(messageFile, messageFile).invoke();
+            BufferedWriter bufferedWriter = fileQueueIOStream.getBufferedWriter();
 
             /** Write message into file */
             bufferedWriter.write(createMessageString(message));
 
-            closeOutputStream(fileOutputStream, outputStreamWriter, bufferedWriter);
+            fileQueueIOStream.close();
         } catch (IOException e) {
             System.out.println(e.getMessage());
         }
@@ -455,6 +417,69 @@ public class FileQueue {
         if (timer != null) {
             timer.cancel();
             setTimer(null);
+        }
+    }
+
+    private class FileQueueIOStream {
+        private File messageFile;
+        private File backupMessageFile;
+        private FileInputStream fileInputStream;
+        private InputStreamReader inputStreamReader;
+        private BufferedReader bufferedReader;
+        private FileOutputStream fileOutputStream;
+        private OutputStreamWriter outputStreamWriter;
+        private BufferedWriter bufferedWriter;
+
+        public FileQueueIOStream(File messageFile, File backupMessageFile) {
+            this.messageFile = messageFile;
+            this.backupMessageFile = backupMessageFile;
+        }
+
+        public FileInputStream getFileInputStream() {
+            return fileInputStream;
+        }
+
+        public InputStreamReader getInputStreamReader() {
+            return inputStreamReader;
+        }
+
+        public BufferedReader getBufferedReader() {
+            return bufferedReader;
+        }
+
+        public FileOutputStream getFileOutputStream() {
+            return fileOutputStream;
+        }
+
+        public OutputStreamWriter getOutputStreamWriter() {
+            return outputStreamWriter;
+        }
+
+        public BufferedWriter getBufferedWriter() {
+            return bufferedWriter;
+        }
+
+        public FileQueueIOStream invoke() throws FileNotFoundException, UnsupportedEncodingException {
+            /** Create a read buffer from message file */
+            fileInputStream = new FileInputStream(messageFile);
+            inputStreamReader = new InputStreamReader(fileInputStream, "UTF-8");
+            bufferedReader = new BufferedReader(inputStreamReader);
+
+            /** Create a write buffer from backupMessage file */
+            fileOutputStream = new FileOutputStream(backupMessageFile, true);
+            outputStreamWriter = new OutputStreamWriter(fileOutputStream, "UTF-8");
+            bufferedWriter = new BufferedWriter(outputStreamWriter);
+            return this;
+        }
+
+        public void close() throws IOException {
+            getBufferedReader().close();
+            getInputStreamReader().close();
+            getFileInputStream().close();
+
+            getBufferedWriter().close();
+            getOutputStreamWriter().close();
+            getFileOutputStream().close();
         }
     }
 }

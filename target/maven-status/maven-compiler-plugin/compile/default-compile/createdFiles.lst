@@ -1,12 +1,13 @@
+com/example/ConfigProperties.class
+com/example/InMemoryQueue.class
+com/example/FileQueue$1.class
+com/example/FileQueue$FileQueueIOStream.class
 com/example/QueueService.class
 com/example/InMemoryQueueService.class
 com/example/QueueProperties.class
-com/example/ConfigProperties.class
-com/example/InMemoryQueue.class
 com/example/SqsQueueService.class
 com/example/QueueServiceInstance.class
 com/example/InMemoryQueue$1.class
 com/example/Message.class
-com/example/FileQueue$1.class
 com/example/FileQueue.class
 com/example/FileQueueService.class
