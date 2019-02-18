@@ -156,7 +156,7 @@ public class InMemoryQueueServiceTest {
 
         /** Mock timer triggers the run method */
         InMemoryQueue queue = memoryQueueService.getQueueByName("MyQueue1");
-        queue.resetInvisibleMessageWhichIsTimeoutInQueue();
+        queue.updateMsgIntoVisibleState();
 
         Assert.assertFalse(memoryQueueService.delete("https://sqs.us-east-2.amazonaws.com/123456789012/MyQueue1", message2FromQueue.getReceiptHandle()));
 

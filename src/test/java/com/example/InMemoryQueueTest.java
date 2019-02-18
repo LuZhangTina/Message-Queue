@@ -140,7 +140,7 @@ public class InMemoryQueueTest {
         message1FromQueue.setVisibleDate(new Date(System.currentTimeMillis() - 1));
 
         /** Mock timer triggers the run method */
-        queue.resetInvisibleMessageWhichIsTimeoutInQueue();
+        queue.updateMsgIntoVisibleState();
 
         /** message1FromQueue should be visible again */
         Assert.assertNull(message1FromQueue.getVisibleDate());
@@ -183,7 +183,7 @@ public class InMemoryQueueTest {
         message3FromQueue.setVisibleDate(new Date(System.currentTimeMillis() - 1));
 
         /** Mock timer triggers the run method */
-        queue.resetInvisibleMessageWhichIsTimeoutInQueue();
+        queue.updateMsgIntoVisibleState();
 
         Message message4FromQueue = queue.pull(2);
         Message message5FromQueue = queue.pull(3);

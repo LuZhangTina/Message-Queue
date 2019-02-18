@@ -40,24 +40,7 @@ public class InMemoryQueue {
          *  The timer's aim is to scan the queue,
          *  then make the messages which are not be deleted during the visibleTimeout visibility again */
         if (queue.isEmpty()) {
-            Timer timer = getTimer();
-            if (timer == null) {
-                timer = new Timer();
-                setTimer(timer);
-            }
-
-            TimerTask timerTask = getTimerTask();
-            if (timerTask == null) {
-                timerTask = new TimerTask() {
-                    @Override
-                    public void run() {
-                        resetInvisibleMessageWhichIsTimeoutInQueue();
-                    }
-                };
-                setTimerTask(timerTask);
-            }
-
-            timer.schedule(timerTask, 0, 1000);
+            startTimer();
         }
 
         queue.offer(message);
@@ -95,38 +78,27 @@ public class InMemoryQueue {
         ConcurrentLinkedQueue<Message> queue = getQueue();
 
         /** Find the invisible message which has the specified receiptHandle from queue */
-        Message messageFromQueue = null;
+        Message messageFromQueue;
         Iterator<Message> iterator = queue.iterator();
         while (iterator.hasNext()) {
             messageFromQueue = iterator.next();
-            if (messageFromQueue.getVisibleDate() != null) {
-                if (messageFromQueue.getReceiptHandle().equals(receiptHandle)) {
+            if (messageFromQueue.getVisibleDate() != null
+                    && messageFromQueue.getReceiptHandle().equals(receiptHandle)) {
                     queue.remove(messageFromQueue);
                     result = true;
                     break;
-                }
             }
         }
 
         /** If the queue is empty, stop the timer */
         if (queue.isEmpty()) {
-            TimerTask timerTask = getTimerTask();
-            if (timerTask != null) {
-                timerTask.cancel();
-                setTimerTask(null);
-            }
-
-            Timer timer = getTimer();
-            if (timer != null) {
-                timer.cancel();
-                setTimer(null);
-            }
+            stopTimer();
         }
 
         return result;
     }
 
-    public void resetInvisibleMessageWhichIsTimeoutInQueue() {
+    public void updateMsgIntoVisibleState() {
         ConcurrentLinkedQueue<Message> myQueue = getQueue();
 
         /** Find the invisible messages in the queue.
@@ -136,10 +108,9 @@ public class InMemoryQueue {
         while (iterator.hasNext()) {
             Message myMessage = iterator.next();
             Date visibleDate = myMessage.getVisibleDate();
-            if (visibleDate != null) {
-                if (visibleDate.before(new Date())) {
+            if (visibleDate != null
+                    && visibleDate.before(new Date())) {
                     myMessage.setVisibleDate(null);
-                }
             }
         }
     }
@@ -158,5 +129,40 @@ public class InMemoryQueue {
 
     private void setTimerTask(TimerTask timerTask) {
         this.timerTask = timerTask;
+    }
+
+    private void startTimer() {
+        Timer timer = getTimer();
+        if (timer == null) {
+            timer = new Timer();
+            setTimer(timer);
+        }
+
+        TimerTask timerTask = getTimerTask();
+        if (timerTask == null) {
+            timerTask = new TimerTask() {
+                @Override
+                public void run() {
+                    updateMsgIntoVisibleState();
+                }
+            };
+            setTimerTask(timerTask);
+        }
+
+        timer.schedule(timerTask, 0, 1000);
+    }
+
+    private void stopTimer() {
+        TimerTask timerTask = getTimerTask();
+        if (timerTask != null) {
+            timerTask.cancel();
+            setTimerTask(null);
+        }
+
+        Timer timer = getTimer();
+        if (timer != null) {
+            timer.cancel();
+            setTimer(null);
+        }
     }
 }
