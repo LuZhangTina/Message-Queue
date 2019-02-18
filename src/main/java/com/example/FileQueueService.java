@@ -37,6 +37,14 @@ public class FileQueueService implements QueueService {
         }
     }
 
+    public FileQueue getOrCreateFileQueue(String queueName) {
+        FileQueue fileQueue = getQueueByName(queueName);
+        if (fileQueue == null) {
+            fileQueue = createQueueByName(queueName);
+        }
+        return fileQueue;
+    }
+
     @Override
     public boolean push(String queueUrl, String... messages) {
         String queueName = QueueProperties.getQueueNameByUrl(queueUrl);
@@ -46,10 +54,7 @@ public class FileQueueService implements QueueService {
 
         /** Find the queue named as queueName.
          *  If there is no specified queue, create a new queue with the queueName */
-        FileQueue fileQueue = getQueueByName(queueName);
-        if (fileQueue == null) {
-            fileQueue = createQueueByName(queueName);
-        }
+        FileQueue fileQueue = getOrCreateFileQueue(queueName);
 
         /** If there is nothing to be pushed, push success */
         if (messages == null || messages.length == 0) {
@@ -76,10 +81,7 @@ public class FileQueueService implements QueueService {
 
         /** Find the queue named as queueName.
          *  If there is no specified queue, create the queue */
-        FileQueue fileQueue = getQueueByName(queueName);
-        if (fileQueue == null) {
-            fileQueue = createQueueByName(queueName);
-        }
+        FileQueue fileQueue = getOrCreateFileQueue(queueName);
 
         /** If consumer set the legal visibilityTimeout, use the set visibilityTimeout
          *  otherwise use queue visibility timeout */

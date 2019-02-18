@@ -37,6 +37,14 @@ public class InMemoryQueueService implements QueueService {
         }
     }
 
+    public InMemoryQueue getOrCreateInMemoryQueue(String queueName) {
+        InMemoryQueue queue = getQueueByName(queueName);
+        if (queue == null) {
+            queue = createQueueByName(queueName);
+        }
+        return queue;
+    }
+
     @Override
     public boolean push(String queueUrl, String... messages) {
         /** Get queue name from URL, if there is no valid queueName, push fails */
@@ -45,17 +53,14 @@ public class InMemoryQueueService implements QueueService {
             return false;
         }
 
-        /** Find the queue named as queueName.
-         *  If there is no specified queue, create a new queue with the queueName */
-        InMemoryQueue queue = getQueueByName(queueName);
-        if (queue == null) {
-            queue = createQueueByName(queueName);
-        }
-
         /** If there is nothing to be pushed, push success */
         if (messages == null || messages.length == 0) {
             return true;
         }
+
+        /** Find the queue named as queueName.
+         *  If there is no specified queue, create a new queue with the queueName */
+        InMemoryQueue queue = getOrCreateInMemoryQueue(queueName);
 
         /**  add messages one by one in the end of the queue */
         for (String data : messages) {
