@@ -23,6 +23,17 @@ public class QueueProperties {
         return DEFAULT_TIMEOUT_SECONDS;
     }
 
+    public static int getMsgVisibilityTimeout(Integer... visibilityTimeout) {
+        int msgVisibilityTimeout = getDefaultVisibilityTimeout();
+        if (visibilityTimeout.length == 1
+                && visibilityTimeout[0] >= QueueProperties.getMinVisibilityTimeout()
+                && visibilityTimeout[0] <= QueueProperties.getMaxVisibilityTimeout()) {
+            msgVisibilityTimeout = visibilityTimeout[0];
+        }
+
+        return msgVisibilityTimeout;
+    }
+
     public static Date createVisibleDate(int visibleTimeout) {
         Calendar calendar = Calendar.getInstance();
         calendar.add(Calendar.SECOND, visibleTimeout);
