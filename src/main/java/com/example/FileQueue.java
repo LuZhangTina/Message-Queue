@@ -164,7 +164,7 @@ public class FileQueue {
         }
 
         try {
-            updateMsgVisibleStateIntoBackupFIle(messageFile, backupMessageFile);
+            updateMsgVisibleStateIntoBackupFile(messageFile, backupMessageFile);
         } catch (IOException e) {
             System.out.println(e.getMessage());
         }
@@ -174,7 +174,7 @@ public class FileQueue {
         unlockQueue(lockFile);
     }
 
-    private void updateMsgVisibleStateIntoBackupFIle(File messageFile, File backupMessageFile) throws IOException {
+    private void updateMsgVisibleStateIntoBackupFile(File messageFile, File backupMessageFile) throws IOException {
         /** Create a read buffer from message file */
         FileInputStream fileInputStream = new FileInputStream(messageFile);
         InputStreamReader inputStreamReader = new InputStreamReader(fileInputStream, "UTF-8");
@@ -212,18 +212,13 @@ public class FileQueue {
             /** If the message's visible date is not 0,
              *  means that message is invisible might need to set to visible */
             long visibleDate = Long.parseLong(messageArray[1]);
-            if (visibleDate != 0) {
+            if (visibleDate != 0 && visibleDate < System.currentTimeMillis()) {
                 /** If the message's visibleDate is before the current date,
                  *  then the message need to be set to visible again */
-                if (visibleDate < System.currentTimeMillis()) {
                     Message message = createMessageByMessageString(line, 0);
                     message.setVisibleDate(null);
                     line = createMessageString(message);
                     bufferedWriter.write(line);
-                } else {
-                    bufferedWriter.write(line);
-                    bufferedWriter.write(System.lineSeparator());
-                }
             } else {
                 bufferedWriter.write(line);
                 bufferedWriter.write(System.lineSeparator());
@@ -324,17 +319,12 @@ public class FileQueue {
 
             /** Get receiptHandle */
             String msgReceiptHandleFromQueue = messageArray[0];
-            if (msgReceiptHandleFromQueue.equals(msgReceiptHandleTobeDeleted)) {
+            if (msgReceiptHandleFromQueue.equals(msgReceiptHandleTobeDeleted)
+                    && Long.parseLong(messageArray[1]) != 0) {
                 /** If the message's visible date is not 0,
                  *  means that message is invisible and can be deleted */
-                long visibleDate = Long.parseLong(messageArray[1]);
-                if (visibleDate != 0) {
                     result = true;
                     continue;
-                } else {
-                    bufferedWriter.write(line);
-                    bufferedWriter.write(System.lineSeparator());
-                }
             } else {
                 bufferedWriter.write(line);
                 bufferedWriter.write(System.lineSeparator());
