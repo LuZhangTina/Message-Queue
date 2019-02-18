@@ -86,24 +86,7 @@ public class FileQueue {
 
         /** If message file doesn't exist, start timer and create message file*/
         if (!messageFile.exists()) {
-            Timer timer = getTimer();
-            if (timer == null) {
-                timer = new Timer();
-                setTimer(timer);
-            }
-
-            TimerTask timerTask = getTimerTask();
-            if (timerTask == null) {
-                timerTask = new TimerTask() {
-                    @Override
-                    public void run() {
-                        updateMessageIntoVisibleState();
-                    }
-                };
-                setTimerTask(timerTask);
-            }
-
-            timer.schedule(timerTask, 0, 1000);
+            startTimer();
 
             try {
                 messageFile.createNewFile();
@@ -159,18 +142,7 @@ public class FileQueue {
 
         /** If message file is empty, then stop the timer and delete the message file */
         if (messageFile.length() == 0) {
-            Timer timer = getTimer();
-            TimerTask timerTask = getTimerTask();
-            if (timerTask != null) {
-                timerTask.cancel();
-                setTimerTask(null);
-            }
-
-            if (timer != null) {
-                timer.cancel();
-                setTimer(null);
-            }
-
+            stopTimer();
             messageFile.delete();
         }
 
@@ -192,55 +164,7 @@ public class FileQueue {
         }
 
         try {
-            /** Create a read buffer from message file */
-            FileInputStream fileInputStream = new FileInputStream(messageFile);
-            InputStreamReader inputStreamReader = new InputStreamReader(fileInputStream, "UTF-8");
-            BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
-
-            /** Create a write buffer from backupMessage file */
-            FileOutputStream fileOutputStream = new FileOutputStream(backupMessageFile, true);
-            OutputStreamWriter outputStreamWriter = new OutputStreamWriter(fileOutputStream, "UTF-8");
-            BufferedWriter bufferedWriter = new BufferedWriter(outputStreamWriter);
-
-            String line;
-            String[] messageArray;
-            while ((line = bufferedReader.readLine()) != null) {
-                messageArray = line.split("\\$");
-
-                /** Check if the message string is illegal */
-                if (messageArray.length < 3) {
-                    continue;
-                }
-
-                /** If the message's visible date is not 0,
-                 *  means that message is invisible might need to set to visible */
-                long visibleDate = Long.parseLong(messageArray[1]);
-                if (visibleDate != 0) {
-                    /** If the message's visibleDate is before the current date,
-                     *  then the message need to be set to visible again */
-                    if (visibleDate < System.currentTimeMillis()) {
-                        Message message = createMessageByMessageString(line, 0);
-                        message.setVisibleDate(null);
-                        line = createMessageString(message);
-                        bufferedWriter.write(line);
-                    } else {
-                        bufferedWriter.write(line);
-                        bufferedWriter.write(System.lineSeparator());
-                    }
-                } else {
-                    bufferedWriter.write(line);
-                    bufferedWriter.write(System.lineSeparator());
-                }
-            }
-
-            bufferedReader.close();
-            inputStreamReader.close();
-            fileInputStream.close();
-
-            bufferedWriter.close();
-            outputStreamWriter.close();
-            fileOutputStream.close();
-
+            updateMsgVisibleStateIntoBackupFIle(messageFile, backupMessageFile);
         } catch (IOException e) {
             System.out.println(e.getMessage());
         }
@@ -248,6 +172,63 @@ public class FileQueue {
         backupMessageFile.renameTo(messageFile);
 
         unlockQueue(lockFile);
+    }
+
+    private void updateMsgVisibleStateIntoBackupFIle(File messageFile, File backupMessageFile) throws IOException {
+        /** Create a read buffer from message file */
+        FileInputStream fileInputStream = new FileInputStream(messageFile);
+        InputStreamReader inputStreamReader = new InputStreamReader(fileInputStream, "UTF-8");
+        BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
+
+        /** Create a write buffer from backupMessage file */
+        FileOutputStream fileOutputStream = new FileOutputStream(backupMessageFile, true);
+        OutputStreamWriter outputStreamWriter = new OutputStreamWriter(fileOutputStream, "UTF-8");
+        BufferedWriter bufferedWriter = new BufferedWriter(outputStreamWriter);
+
+        setMsgVisibleAndWriteIntoBackupFile(bufferedReader, bufferedWriter);
+
+        closeInputStream(fileInputStream, inputStreamReader, bufferedReader);
+
+        closeOutputStream(fileOutputStream, outputStreamWriter, bufferedWriter);
+    }
+
+    private void closeInputStream(FileInputStream fileInputStream, InputStreamReader inputStreamReader, BufferedReader bufferedReader) throws IOException {
+        bufferedReader.close();
+        inputStreamReader.close();
+        fileInputStream.close();
+    }
+
+    private void setMsgVisibleAndWriteIntoBackupFile(BufferedReader bufferedReader, BufferedWriter bufferedWriter) throws IOException {
+        String line;
+        String[] messageArray;
+        while ((line = bufferedReader.readLine()) != null) {
+            messageArray = line.split("\\$");
+
+            /** Check if the message string is illegal */
+            if (messageArray.length < 3) {
+                continue;
+            }
+
+            /** If the message's visible date is not 0,
+             *  means that message is invisible might need to set to visible */
+            long visibleDate = Long.parseLong(messageArray[1]);
+            if (visibleDate != 0) {
+                /** If the message's visibleDate is before the current date,
+                 *  then the message need to be set to visible again */
+                if (visibleDate < System.currentTimeMillis()) {
+                    Message message = createMessageByMessageString(line, 0);
+                    message.setVisibleDate(null);
+                    line = createMessageString(message);
+                    bufferedWriter.write(line);
+                } else {
+                    bufferedWriter.write(line);
+                    bufferedWriter.write(System.lineSeparator());
+                }
+            } else {
+                bufferedWriter.write(line);
+                bufferedWriter.write(System.lineSeparator());
+            }
+        }
     }
 
     private Message getFirstVisibleMessageFromMessageFile(File messageFile, File backupMessageFile, int visibilityTimeout) {
@@ -263,41 +244,43 @@ public class FileQueue {
             OutputStreamWriter outputStreamWriter = new OutputStreamWriter(fileOutputStream, "UTF-8");
             BufferedWriter bufferedWriter = new BufferedWriter(outputStreamWriter);
 
-            String line;
-            String[] messageArray;
-            while ((line = bufferedReader.readLine()) != null) {
-                messageArray = line.split("\\$");
+            message = getMessageAndUpdateBackupFile(visibilityTimeout, bufferedReader, bufferedWriter);
 
-                /** Check if the message string is illegal */
-                if (messageArray.length < 3) {
-                    continue;
-                }
+            closeInputStream(fileInputStream, inputStreamReader, bufferedReader);
 
-                /** If the message's visible date is 0,
-                 *  means that message is visible and can be pulled */
-                long visibleDate = Long.parseLong(messageArray[1]);
-                if (visibleDate == 0 && message == null) {
-                    message = createMessageByMessageString(line, visibilityTimeout);
-                    line = createMessageString(message);
-                    bufferedWriter.write(line);
-                } else {
-                    bufferedWriter.write(line);
-                    bufferedWriter.write(System.lineSeparator());
-                }
-            }
-
-            bufferedReader.close();
-            inputStreamReader.close();
-            fileInputStream.close();
-
-            bufferedWriter.close();
-            outputStreamWriter.close();
-            fileOutputStream.close();
+            closeOutputStream(fileOutputStream, outputStreamWriter, bufferedWriter);
 
         } catch (IOException e) {
             System.out.println(e.getMessage());
         }
 
+        return message;
+    }
+
+    private Message getMessageAndUpdateBackupFile(int visibilityTimeout, BufferedReader bufferedReader, BufferedWriter bufferedWriter) throws IOException {
+        Message message = null;
+        String line;
+        String[] messageArray;
+        while ((line = bufferedReader.readLine()) != null) {
+            messageArray = line.split("\\$");
+
+            /** Check if the message string is illegal */
+            if (messageArray.length < 3) {
+                continue;
+            }
+
+            /** If the message's visible date is 0,
+             *  means that message is visible and can be pulled */
+            long visibleDate = Long.parseLong(messageArray[1]);
+            if (visibleDate == 0 && message == null) {
+                message = createMessageByMessageString(line, visibilityTimeout);
+                line = createMessageString(message);
+                bufferedWriter.write(line);
+            } else {
+                bufferedWriter.write(line);
+                bufferedWriter.write(System.lineSeparator());
+            }
+        }
         return message;
     }
 
@@ -314,48 +297,56 @@ public class FileQueue {
             OutputStreamWriter outputStreamWriter = new OutputStreamWriter(fileOutputStream, "UTF-8");
             BufferedWriter bufferedWriter = new BufferedWriter(outputStreamWriter);
 
-            String line;
-            String[] messageArray;
-            while ((line = bufferedReader.readLine()) != null) {
-                messageArray = line.split("\\$");
+            result = deleteMessageAndUpdateBackupFile(msgReceiptHandleTobeDeleted, bufferedReader, bufferedWriter);
 
-                /** Check if the message string is illegal */
-                if (messageArray.length < 3) {
-                    continue;
-                }
+            closeInputStream(fileInputStream, inputStreamReader, bufferedReader);
 
-                /** Get receiptHandle */
-                String msgReceiptHandleFromQueue = messageArray[0];
-                if (msgReceiptHandleFromQueue.equals(msgReceiptHandleTobeDeleted)) {
-                    /** If the message's visible date is not 0,
-                     *  means that message is invisible and can be deleted */
-                    long visibleDate = Long.parseLong(messageArray[1]);
-                    if (visibleDate != 0) {
-                        result = true;
-                        continue;
-                    } else {
-                        bufferedWriter.write(line);
-                        bufferedWriter.write(System.lineSeparator());
-                    }
-                } else {
-                    bufferedWriter.write(line);
-                    bufferedWriter.write(System.lineSeparator());
-                }
-            }
-
-            bufferedReader.close();
-            inputStreamReader.close();
-            fileInputStream.close();
-
-            bufferedWriter.close();
-            outputStreamWriter.close();
-            fileOutputStream.close();
+            closeOutputStream(fileOutputStream, outputStreamWriter, bufferedWriter);
 
         } catch (IOException e) {
             System.out.println(e.getMessage());
         }
 
         return result;
+    }
+
+    private boolean deleteMessageAndUpdateBackupFile(String msgReceiptHandleTobeDeleted, BufferedReader bufferedReader, BufferedWriter bufferedWriter) throws IOException {
+        boolean result = false;
+        String line;
+        String[] messageArray;
+        while ((line = bufferedReader.readLine()) != null) {
+            messageArray = line.split("\\$");
+
+            /** Check if the message string is illegal */
+            if (messageArray.length < 3) {
+                continue;
+            }
+
+            /** Get receiptHandle */
+            String msgReceiptHandleFromQueue = messageArray[0];
+            if (msgReceiptHandleFromQueue.equals(msgReceiptHandleTobeDeleted)) {
+                /** If the message's visible date is not 0,
+                 *  means that message is invisible and can be deleted */
+                long visibleDate = Long.parseLong(messageArray[1]);
+                if (visibleDate != 0) {
+                    result = true;
+                    continue;
+                } else {
+                    bufferedWriter.write(line);
+                    bufferedWriter.write(System.lineSeparator());
+                }
+            } else {
+                bufferedWriter.write(line);
+                bufferedWriter.write(System.lineSeparator());
+            }
+        }
+        return result;
+    }
+
+    private void closeOutputStream(FileOutputStream fileOutputStream, OutputStreamWriter outputStreamWriter, BufferedWriter bufferedWriter) throws IOException {
+        bufferedWriter.close();
+        outputStreamWriter.close();
+        fileOutputStream.close();
     }
 
     private Message createMessageByMessageString(String messageString, int visibilityTimeout) {
@@ -390,9 +381,7 @@ public class FileQueue {
             /** Write message into file */
             bufferedWriter.write(createMessageString(message));
 
-            bufferedWriter.close();
-            outputStreamWriter.close();
-            fileOutputStream.close();
+            closeOutputStream(fileOutputStream, outputStreamWriter, bufferedWriter);
         } catch (IOException e) {
             System.out.println(e.getMessage());
         }
@@ -442,5 +431,40 @@ public class FileQueue {
 
     private void unlockQueue(File lockFile) {
         lockFile.delete();
+    }
+
+    private void startTimer() {
+        Timer timer = getTimer();
+        if (timer == null) {
+            timer = new Timer();
+            setTimer(timer);
+        }
+
+        TimerTask timerTask = getTimerTask();
+        if (timerTask == null) {
+            timerTask = new TimerTask() {
+                @Override
+                public void run() {
+                    updateMessageIntoVisibleState();
+                }
+            };
+            setTimerTask(timerTask);
+        }
+
+        timer.schedule(timerTask, 0, 1000);
+    }
+
+    private void stopTimer() {
+        Timer timer = getTimer();
+        TimerTask timerTask = getTimerTask();
+        if (timerTask != null) {
+            timerTask.cancel();
+            setTimerTask(null);
+        }
+
+        if (timer != null) {
+            timer.cancel();
+            setTimer(null);
+        }
     }
 }
