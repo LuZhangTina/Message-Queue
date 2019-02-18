@@ -75,20 +75,19 @@ public class FileQueueService implements QueueService {
         }
 
         /** Find the queue named as queueName.
-         *  If there is no specified queue, pull fails, return null */
+         *  If there is no specified queue, create the queue */
         FileQueue fileQueue = getQueueByName(queueName);
         if (fileQueue == null) {
-            return null;
+            fileQueue = createQueueByName(queueName);
         }
 
         /** If consumer set the legal visibilityTimeout, use the set visibilityTimeout
          *  otherwise use default visibility timeout */
         int msgVisibilityTimeout = QueueProperties.getDefaultVisibilityTimeout();
-        if (visibilityTimeout.length == 1) {
-            if (visibilityTimeout[0] >= QueueProperties.getMinVisibilityTimeout()
-                    && visibilityTimeout[0] <= QueueProperties.getMaxVisibilityTimeout()) {
+        if (visibilityTimeout.length == 1
+                && visibilityTimeout[0] >= QueueProperties.getMinVisibilityTimeout()
+                && visibilityTimeout[0] <= QueueProperties.getMaxVisibilityTimeout()) {
                 msgVisibilityTimeout = visibilityTimeout[0];
-            }
         }
 
         return fileQueue.pull(msgVisibilityTimeout);

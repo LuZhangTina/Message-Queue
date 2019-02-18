@@ -85,11 +85,10 @@ public class InMemoryQueueService implements QueueService {
         /** If consumer set the legal visibilityTimeout, use the set visibilityTimeout
          *  otherwise use default visibility timeout */
         int msgVisibilityTimeout = QueueProperties.getDefaultVisibilityTimeout();
-        if (visibilityTimeout.length == 1) {
-            if (visibilityTimeout[0] >= QueueProperties.getMinVisibilityTimeout()
-                    && visibilityTimeout[0] <= QueueProperties.getMaxVisibilityTimeout()) {
+        if (visibilityTimeout.length == 1
+                && visibilityTimeout[0] >= QueueProperties.getMinVisibilityTimeout()
+                && visibilityTimeout[0] <= QueueProperties.getMaxVisibilityTimeout()) {
                 msgVisibilityTimeout = visibilityTimeout[0];
-            }
         }
 
         return queue.pull(msgVisibilityTimeout);
